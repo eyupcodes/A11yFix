@@ -25,9 +25,15 @@ a11yfix scan https://example.com
 
 ## Status
 
-M1 — Foundation.
+M2 — Scanner.
 
-The repository currently contains the monorepo foundation only. Scanner, scoring, reporting, and CLI behavior are not implemented yet.
+The repository contains the monorepo foundation and the low-level scanning engine. `@a11yfix/scanner` validates a public URL, drives headless Chromium through Playwright, injects axe-core, and returns raw axe results plus scan metadata.
+
+Normalized findings, WCAG mapping, severity classification, scoring, report generation, and CLI scan behavior are not implemented yet.
+
+### Scanner security limitation
+
+The local scanner performs obvious private/local target blocking, but full hosted-service SSRF defense will require DNS resolution and post-resolution validation later.
 
 ## Roadmap
 

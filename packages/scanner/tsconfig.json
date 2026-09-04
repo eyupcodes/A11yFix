@@ -3,7 +3,10 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"]
+    "types": ["node"],
+    // Callbacks passed to `page.evaluate` are compiled here but execute inside
+    // the browser, so the DOM lib is required to type `window` and `document`.
+    "lib": ["ES2022", "DOM"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "coverage", "node_modules"]

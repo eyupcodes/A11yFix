@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Chromium for Playwright
+        run: pnpm --filter @a11yfix/scanner exec playwright install --with-deps chromium
+
       - name: Lint
         run: pnpm lint
 

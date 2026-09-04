@@ -1,14 +1,14 @@
 # Roadmap
 
-## M1 Foundation
+## M1 Foundation — complete
 
 Establish the private TypeScript monorepo, strict build/test/lint infrastructure, workspace boundaries, CI, and project documentation.
 
-## M2 Scanner
+## M2 Scanner — complete
 
 Add Playwright browser automation and axe-core audit execution.
 
-## M3 Core normalization/scoring
+## M3 Core normalization/scoring — next
 
 Add normalized findings, WCAG mapping, severity classification, prioritization scoring, and remediation models.
 

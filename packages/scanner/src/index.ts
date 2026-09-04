@@ -1,10 +1,17 @@
 /**
- * @a11yfix/scanner foundation entry point.
+ * `@a11yfix/scanner` public API.
  *
- * M1 declares the package boundary and future browser/audit
- * dependencies. Browser automation and axe execution land in M2.
+ * The scanner is deliberately thin: it turns a URL into raw axe-core results
+ * plus scan metadata. Normalization, WCAG mapping, severity and scoring belong
+ * to `@a11yfix/core` (M3) and must not be added here.
  */
 
-export const PACKAGE_NAME = '@a11yfix/scanner' as const;
-
-export const FOUNDATION_STATUS = 'm1-foundation' as const;
+export { scanAccessibility } from './scanner.js';
+export { ScannerError, SCANNER_ERROR_CODES, isScannerError } from './errors.js';
+export type { ScannerErrorCode } from './errors.js';
+export type {
+  ScanOptions,
+  ScanResult,
+  AxeResults,
+  RunOptions,
+} from './types.js';
