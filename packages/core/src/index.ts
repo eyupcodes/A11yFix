@@ -1,11 +1,30 @@
 /**
- * @a11yfix/core foundation entry point.
+ * `@a11yfix/core` public API.
  *
- * M1 provides only the package boundary so workspace builds,
- * typechecks, and tests can be verified. Shared finding types,
- * validation, and scoring land in later milestones.
+ * Core turns untrusted axe-core results into a normalized, WCAG-mapped,
+ * severity-classified, scored report. It is pure — no browser, no I/O,
+ * no rendering. `analyzeAxeResults` is the single entry point; the
+ * reporter (M4) and CLI (M5) consume its output.
  */
 
-export const PACKAGE_NAME = '@a11yfix/core' as const;
-
-export const FOUNDATION_STATUS = 'm1-foundation' as const;
+export { analyzeAxeResults } from './normalize.js';
+export type { AnalyzeMeta } from './normalize.js';
+export { CORE_ERROR_CODES, CoreError, isCoreError } from './errors.js';
+export type { CoreErrorCode } from './errors.js';
+export { classifySeverity, severityWeight } from './severity.js';
+export { extractWcag } from './wcag.js';
+export type {
+  AccessibilityReport,
+  Finding,
+  FindingNode,
+  Grade,
+  Remediation,
+  RuleCounts,
+  ScanMeta,
+  ScoreBreakdown,
+  Severity,
+  WcagCriterion,
+  WcagLevel,
+  WcagMapping,
+  WcagVersion,
+} from './types.js';

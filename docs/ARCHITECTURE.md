@@ -1,6 +1,6 @@
 # Architecture
 
-A11yFix is a private pnpm/TypeScript monorepo. M1 established workspace and dependency boundaries. M2 adds the low-level scanning engine in `packages/scanner`.
+A11yFix is a private pnpm/TypeScript monorepo. M1 established workspace and dependency boundaries. M2 adds the low-level scanning engine in `packages/scanner`. M3 adds the core analysis layer in `packages/core`.
 
 ## Workspaces
 
@@ -17,7 +17,7 @@ A11yFix is a private pnpm/TypeScript monorepo. M1 established workspace and depe
   - Depends on core for shared finding representations.
   - Must not depend on CLI or scanner.
 - `packages/core` — `@a11yfix/core`
-  - Will own normalized findings, WCAG mapping, severity classification, scoring, remediation models, and validation.
+  - Owns normalized findings, WCAG mapping, severity classification, scoring, remediation models, and validation.
   - Must not depend on CLI, scanner, or reporter.
 
 ## Dependency direction
@@ -70,6 +70,35 @@ That interpretation layer belongs to `@a11yfix/core` (M3), and rendering belongs
 ### URL security scope
 
 URL validation inspects the literal hostname only. It performs no DNS resolution and does not re-validate redirects. The local scanner performs obvious private/local target blocking, but full hosted-service SSRF defense will require DNS resolution and post-resolution validation later.
+
+## Core (M3)
+
+`analyzeAxeResults(results, meta?)` is the single public entry point. The flow is linear, pure, and owns no global state:
+
+```text
+unknown axe output
+ ↓  schemas.ts — parseAxeResults         (rejects anything unusable)
+validated violations / passes / incomplete / inapplicable
+ ↓  findings.ts — normalizeFindings      (severity, WCAG, remediation)
+deterministically ordered findings       (severity desc, node count desc, rule id asc)
+ ↓  scoring.ts — scoreFindings           (penalty, score, grade)
+AccessibilityReport { findings, score, grade, breakdown, ruleCounts, meta }
+```
+
+Design notes:
+
+- Axe output is treated as untrusted: it is produced inside page content the scanner does not control, so it is validated with Zod before anything reads it. Only the fields M3 consumes are checked; everything else is stripped so axe-core minor upgrades do not break the parse.
+- WCAG mapping reads axe rule tags only. Criterion tags (`wcag111` → `1.1.1`) and level tags (`wcag2aa` → WCAG 2.0 AA) are parsed; every other tag family is ignored except `best-practice`, which is surfaced as a flag.
+- Missing or unknown `impact` falls back to `moderate` rather than dropping the finding.
+- Every failure surfaces as a `CoreError` carrying a stable `code` (`INVALID_AXE_RESULTS`, `UNSUPPORTED_AXE_SHAPE`) and the original `cause`.
+
+### Scoring model
+
+Each conformance finding contributes `severity weight × min(nodeCount, 10)` to a total penalty, subtracted from a perfect 100 and clamped at zero. Severity weights are `critical: 10`, `serious: 5`, `moderate: 2`, `minor: 1`. Grades are `A ≥ 90`, `B ≥ 80`, `C ≥ 70`, `D ≥ 60`, `F` otherwise.
+
+### Best-practice exclusion
+
+Best-practice rules (`accesskeys`, `aria-allowed-attr` without WCAG tags, etc.) test no WCAG success criterion and carry no conformance obligation. They appear in the report as findings but are counted separately in `breakdown.bestPracticeFindings` and never move the conformance score.
 
 ## Invariants
 

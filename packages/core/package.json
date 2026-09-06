@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Shared accessibility finding types and validation primitives.",
+  "description": "Normalized accessibility findings, WCAG mapping, severity classification, and scoring.",
   "license": "MIT",
   "engines": {
     "node": ">=20"

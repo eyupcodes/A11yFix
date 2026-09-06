@@ -8,11 +8,11 @@ Establish the private TypeScript monorepo, strict build/test/lint infrastructure
 
 Add Playwright browser automation and axe-core audit execution.
 
-## M3 Core normalization/scoring — next
+## M3 Core normalization/scoring — complete
 
 Add normalized findings, WCAG mapping, severity classification, prioritization scoring, and remediation models.
 
-## M4 Reporter
+## M4 Reporter — next
 
 Add JSON and HTML report generation and export behavior.
 

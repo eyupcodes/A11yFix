@@ -25,11 +25,11 @@ a11yfix scan https://example.com
 
 ## Status
 
-M2 — Scanner.
+M3 — Core.
 
-The repository contains the monorepo foundation and the low-level scanning engine. `@a11yfix/scanner` validates a public URL, drives headless Chromium through Playwright, injects axe-core, and returns raw axe results plus scan metadata.
+The repository contains the monorepo foundation, the low-level scanning engine, and the core analysis layer. `@a11yfix/scanner` validates a public URL, drives headless Chromium through Playwright, injects axe-core, and returns raw axe results plus scan metadata. `@a11yfix/core` turns those raw results into normalized findings with WCAG mapping, severity classification, remediation guidance, and a prioritization score through `analyzeAxeResults`.
 
-Normalized findings, WCAG mapping, severity classification, scoring, report generation, and CLI scan behavior are not implemented yet.
+Report generation and CLI scan behavior are not implemented yet.
 
 ### Scanner security limitation
 
