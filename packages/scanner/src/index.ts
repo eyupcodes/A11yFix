@@ -6,7 +6,9 @@
  * to `@a11yfix/core` (M3) and must not be added here.
  */
 
-export { scanAccessibility } from './scanner.js';
+export { scanAccessibility, scanPage } from './scanner.js';
+export { auditPage } from './axe.js';
+export { withChromiumPage } from './browser.js';
 export { ScannerError, SCANNER_ERROR_CODES, isScannerError } from './errors.js';
 export type { ScannerErrorCode } from './errors.js';
 export type {

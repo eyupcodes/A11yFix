@@ -20,11 +20,11 @@ Add JSON and HTML report generation and export behavior.
 
 Add developer-facing scan commands and report output workflows.
 
-## M6 Tests — next
+## M6 Tests — complete
 
 Expand unit, integration, and end-to-end coverage across scanner, core, reporter, and CLI workflows.
 
-## M7 GitHub polish / v0.1.0
+## M7 GitHub polish / v0.1.0 — next
 
 Harden documentation, examples, release readiness, and CI behavior for the first tagged release.
 

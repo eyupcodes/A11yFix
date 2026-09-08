@@ -205,7 +205,7 @@ function getReportStyles(): string {
       --text-muted: #475569;
       --border: #e2e8f0;
       --code-bg: #f1f5f9;
-      --link: #0284c7;
+      --link: #0369a1;
     }
     @media (prefers-color-scheme: dark) {
       :root {
