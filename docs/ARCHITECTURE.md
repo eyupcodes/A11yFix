@@ -120,6 +120,31 @@ Design notes:
 - **Accessible HTML**: Generated HTML reports are self-contained with embedded CSS, support dark/light modes via `prefers-color-scheme`, use semantic landmarks (`<header>`, `<main>`, `<section>`, `<article>`), provide high-contrast severity badges, and expose expandable `<details>` elements for inspecting affected DOM nodes.
 - **Predictable errors**: All failure modes throw `ReporterError` carrying typed codes: `INVALID_REPORT`, `UNSUPPORTED_FORMAT`, or `FILE_WRITE_FAILED`.
 
+## CLI (M5)
+
+`@a11yfix/cli` exposes the `a11yfix scan <url>` command and coordinates scanner execution, core analysis, report rendering, and file export.
+
+```text
+a11yfix scan <url> [options]
+ ↓  program.ts — createProgram          (commander argument and flag parsing)
+ ↓  scan.ts — executeScan
+ ├→ scanner.ts — scanAccessibility      (browser launch, page audit)
+ ├→ core — analyzeAxeResults            (normalize, WCAG map, score)
+ ├→ reporter — writeReport              (optional file export: -o, --output)
+ ├→ reporter — renderJsonReport         (optional raw JSON stdout: --json)
+ └→ formatters.ts — formatTerminalSummary (human-readable summary: score, breakdown, findings)
+```
+
+Design notes:
+
+- **Commander integration**: CLI options (`-o, --output`, `-f, --format`, `-t, --threshold`, `--timeout`, `--json`, `-q, --quiet`) are parsed with validation guards.
+- **Predictable exit codes**:
+  - `0` (`EXIT_CODES.SUCCESS`): Scan succeeded and score meets any specified threshold.
+  - `1` (`EXIT_CODES.FAILURE`): Score below threshold, or scan/runtime execution failed.
+  - `2` (`EXIT_CODES.INVALID_ARGS`): Invalid arguments (out-of-bounds threshold, invalid timeout) or invalid target URL.
+- **Terminal output**: Pure formatters render structured summaries including target metadata, score badge, severity counts, violations preview, and threshold evaluation status without external terminal styling libraries.
+- **Dependency inversion for I/O**: `executeScan` accepts optional `CliIo` injection (`stdout`, `stderr`), enabling reliable and isolated unit testing.
+
 ## Invariants
 
 - No circular workspace dependencies.

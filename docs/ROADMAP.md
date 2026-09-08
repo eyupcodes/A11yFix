@@ -16,11 +16,11 @@ Add normalized findings, WCAG mapping, severity classification, prioritization s
 
 Add JSON and HTML report generation and export behavior.
 
-## M5 CLI — next
+## M5 CLI — complete
 
 Add developer-facing scan commands and report output workflows.
 
-## M6 Tests
+## M6 Tests — next
 
 Expand unit, integration, and end-to-end coverage across scanner, core, reporter, and CLI workflows.
 

@@ -17,23 +17,38 @@ A11yFix is an open-source, automated web accessibility scanner aimed at develope
 - CLI
 - CI integration
 
-## Planned CLI usage
+## CLI usage
 
 ```sh
+# Scan a URL and display terminal summary
 a11yfix scan https://example.com
+
+# Export report to HTML or JSON
+a11yfix scan https://example.com --output report.html
+a11yfix scan https://example.com --output report.json --format json
+
+# CI threshold gate (fails with exit code 1 if score < 80)
+a11yfix scan https://example.com --threshold 80
+
+# Output raw JSON to stdout for piping
+a11yfix scan https://example.com --json
+
+# Quiet mode (suppress terminal summary)
+a11yfix scan https://example.com --quiet --output report.html
 ```
 
 ## Status
 
-M4 — Reporter.
+M5 — CLI.
 
-The repository contains the monorepo foundation, the low-level scanning engine, the core analysis layer, and the report generation layer:
+The repository contains the monorepo foundation, the low-level scanning engine, the core analysis layer, the report generation layer, and the developer-facing CLI:
 
 - `@a11yfix/scanner` validates target URLs, drives headless Chromium through Playwright, injects axe-core, and produces raw scan results.
 - `@a11yfix/core` normalizes findings, maps WCAG criteria, classifies severity, and scores reports through `analyzeAxeResults`.
 - `@a11yfix/reporter` serializes JSON reports, renders standalone, responsive, accessible HTML reports, and provides file export utilities through `renderJsonReport`, `renderHtmlReport`, and `writeReport`.
+- `@a11yfix/cli` provides the `a11yfix scan <url>` command with formatters, threshold gates, export options, and predictable exit codes (0, 1, 2).
 
-CLI scan command workflows land in M5.
+Comprehensive test suite expansion lands in M6.
 
 ### Scanner security limitation
 

@@ -1,11 +1,49 @@
-#!/usr/bin/env node
 /**
- * @a11yfix/cli foundation entry point.
- *
- * M1 declares the CLI package boundary and reserves the future
- * commander implementation. No scanning behavior exists yet.
+ * Main entry point for `@a11yfix/cli`.
  */
 
-export const PACKAGE_NAME = '@a11yfix/cli' as const;
+import { fileURLToPath } from 'node:url';
 
-export const FOUNDATION_STATUS = 'm1-foundation' as const;
+import { createProgram, type CreateProgramOptions } from './program.js';
+import { executeScan } from './scan.js';
+import {
+  type CliIo,
+  type ExitCode,
+  EXIT_CODES,
+  type ScanCommandOptions,
+} from './types.js';
+
+export { createProgram, type CreateProgramOptions };
+export { executeScan };
+export {
+  formatError,
+  formatTerminalSummary,
+  type FormatSummaryOptions,
+} from './formatters.js';
+export { type CliIo, type ExitCode, EXIT_CODES, type ScanCommandOptions };
+
+/**
+ * Checks whether the current module was directly invoked as the process entry point.
+ */
+export function isMainModule(): boolean {
+  if (!process.argv[1]) {
+    return false;
+  }
+  try {
+    return fileURLToPath(import.meta.url) === process.argv[1];
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Runs the CLI with the provided argv arguments.
+ */
+export async function run(argv: string[] = process.argv): Promise<void> {
+  const program = createProgram();
+  await program.parseAsync(argv);
+}
+
+if (isMainModule()) {
+  void run();
+}
