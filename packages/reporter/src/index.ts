@@ -1,10 +1,26 @@
 /**
- * @a11yfix/reporter foundation entry point.
+ * @a11yfix/reporter
  *
- * M1 declares the package boundary only. JSON/HTML report
- * generation and export formats land in later milestones.
+ * Report generation and file export layer for A11yFix.
+ * Produces serialized JSON and standalone, accessible HTML reports.
  */
 
-export const PACKAGE_NAME = '@a11yfix/reporter' as const;
+export {
+  REPORTER_ERROR_CODES,
+  ReporterError,
+  isReporterError,
+} from './errors.js';
+export type { ReporterErrorCode } from './errors.js';
 
-export const FOUNDATION_STATUS = 'm1-foundation' as const;
+export { escapeAttribute, escapeHtml } from './escape.js';
+export { writeReport } from './export.js';
+export { renderHtmlReport } from './html.js';
+export { renderJsonReport } from './json.js';
+
+export type {
+  HtmlReportOptions,
+  JsonReportOptions,
+  ReportFormat,
+  WriteReportOptions,
+} from './types.js';
+export { validateReport } from './validate.js';

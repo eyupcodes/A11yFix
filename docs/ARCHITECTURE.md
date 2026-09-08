@@ -13,8 +13,8 @@ A11yFix is a private pnpm/TypeScript monorepo. M1 established workspace and depe
   - Depends on core for shared finding representations and validation.
   - Must not depend on CLI or reporter.
 - `packages/reporter` — `@a11yfix/reporter`
-  - Will own report normalization, rendering, and export formats.
-  - Depends on core for shared finding representations.
+  - Owns report serialization (JSON), standalone accessible HTML rendering, and file export formats.
+  - Depends on core for shared finding representations and validation.
   - Must not depend on CLI or scanner.
 - `packages/core` — `@a11yfix/core`
   - Owns normalized findings, WCAG mapping, severity classification, scoring, remediation models, and validation.
@@ -99,6 +99,26 @@ Each conformance finding contributes `severity weight × min(nodeCount, 10)` to 
 ### Best-practice exclusion
 
 Best-practice rules (`accesskeys`, `aria-allowed-attr` without WCAG tags, etc.) test no WCAG success criterion and carry no conformance obligation. They appear in the report as findings but are counted separately in `breakdown.bestPracticeFindings` and never move the conformance score.
+
+## Reporter (M4)
+
+`@a11yfix/reporter` renders validated `AccessibilityReport` objects into serialized output formats and handles file-system export.
+
+```text
+AccessibilityReport
+ ↓  validate.ts — validateReport        (validates contract before rendering)
+ ├→ json.ts — renderJsonReport          (compact or pretty-printed JSON string)
+ ├→ html.ts — renderHtmlReport          (self-contained, responsive, accessible HTML5)
+ └→ export.ts — writeReport             (auto-detects format, creates dirs, writes file)
+```
+
+Design notes:
+
+- **Zero runtime dependencies**: Uses native JavaScript APIs, string builders, and Node.js built-ins (`node:fs/promises`, `node:path`).
+- **Defensive validation**: Untrusted inputs are checked against the `AccessibilityReport` contract before processing, failing fast with `ReporterError('INVALID_REPORT')`.
+- **Security & XSS Prevention**: All dynamic values (selectors, page titles, URLs, code snippets, failure summaries) are escaped through `escapeHtml` and `escapeAttribute`. Links are checked with `isSafeUrl` to forbid `javascript:` and unsafe protocols. Element snippets are rendered inside `<pre><code>` as escaped text, never unescaped DOM nodes.
+- **Accessible HTML**: Generated HTML reports are self-contained with embedded CSS, support dark/light modes via `prefers-color-scheme`, use semantic landmarks (`<header>`, `<main>`, `<section>`, `<article>`), provide high-contrast severity badges, and expose expandable `<details>` elements for inspecting affected DOM nodes.
+- **Predictable errors**: All failure modes throw `ReporterError` carrying typed codes: `INVALID_REPORT`, `UNSUPPORTED_FORMAT`, or `FILE_WRITE_FAILED`.
 
 ## Invariants
 

@@ -12,11 +12,11 @@ Add Playwright browser automation and axe-core audit execution.
 
 Add normalized findings, WCAG mapping, severity classification, prioritization scoring, and remediation models.
 
-## M4 Reporter — next
+## M4 Reporter — complete
 
 Add JSON and HTML report generation and export behavior.
 
-## M5 CLI
+## M5 CLI — next
 
 Add developer-facing scan commands and report output workflows.
 

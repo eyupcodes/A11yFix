@@ -1,10 +1,32 @@
 import { describe, expect, it } from 'vitest';
 
-import { FOUNDATION_STATUS, PACKAGE_NAME } from './index.js';
+import {
+  REPORTER_ERROR_CODES,
+  ReporterError,
+  escapeAttribute,
+  escapeHtml,
+  isReporterError,
+  renderHtmlReport,
+  renderJsonReport,
+  validateReport,
+  writeReport,
+} from './index.js';
 
-describe('@a11yfix/reporter foundation', () => {
-  it('exposes the package boundary', () => {
-    expect(PACKAGE_NAME).toBe('@a11yfix/reporter');
-    expect(FOUNDATION_STATUS).toBe('m1-foundation');
+describe('@a11yfix/reporter public API', () => {
+  it('exposes all core report generation and export functions', () => {
+    expect(typeof renderJsonReport).toBe('function');
+    expect(typeof renderHtmlReport).toBe('function');
+    expect(typeof writeReport).toBe('function');
+    expect(typeof validateReport).toBe('function');
+    expect(typeof escapeHtml).toBe('function');
+    expect(typeof escapeAttribute).toBe('function');
+  });
+
+  it('exposes error model and guards', () => {
+    expect(REPORTER_ERROR_CODES).toContain('INVALID_REPORT');
+    expect(REPORTER_ERROR_CODES).toContain('UNSUPPORTED_FORMAT');
+    expect(REPORTER_ERROR_CODES).toContain('FILE_WRITE_FAILED');
+    expect(typeof ReporterError).toBe('function');
+    expect(typeof isReporterError).toBe('function');
   });
 });
