@@ -128,3 +128,42 @@ export function validateReport(
     throw new ReporterError('INVALID_REPORT', 'Report meta must be an object.');
   }
 }
+
+/**
+ * Validates that a value conforms to the MultiPageReport contract.
+ *
+ * @throws {ReporterError} with code `INVALID_REPORT` if malformed.
+ */
+export function validateMultiPageReport(
+  report: unknown,
+): asserts report is import('@a11yfix/core').MultiPageReport {
+  if (!isObject(report)) {
+    throw new ReporterError(
+      'INVALID_REPORT',
+      'Multi-page report must be a non-null object.',
+    );
+  }
+
+  const candidate = report;
+
+  if (!isObject(candidate['summary'])) {
+    throw new ReporterError(
+      'INVALID_REPORT',
+      'Multi-page report summary must be an object.',
+    );
+  }
+
+  if (!Array.isArray(candidate['pages'])) {
+    throw new ReporterError(
+      'INVALID_REPORT',
+      'Multi-page report pages must be an array.',
+    );
+  }
+
+  if (!Array.isArray(candidate['commonViolations'])) {
+    throw new ReporterError(
+      'INVALID_REPORT',
+      'Multi-page report commonViolations must be an array.',
+    );
+  }
+}

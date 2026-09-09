@@ -1,13 +1,16 @@
-import { analyzeAxeResults } from '@a11yfix/core';
+import { analyzeAxeResults, analyzeCrawlResults } from '@a11yfix/core';
 import {
   renderHtmlReport,
   renderJsonReport,
+  renderMultiPageHtmlReport,
+  renderMultiPageJsonReport,
   ReporterError,
 } from '@a11yfix/reporter';
-import { scanAccessibility, ScannerError } from '@a11yfix/scanner';
+import { crawlSite, scanAccessibility, ScannerError } from '@a11yfix/scanner';
 
 import type {
   ApiErrorResponse,
+  CrawlApiRequest,
   ExportApiRequest,
   HealthApiResponse,
   ScanApiRequest,
@@ -78,6 +81,110 @@ export async function handleScan(
   }
 }
 
+export async function handleCrawl(
+  payload: unknown,
+): Promise<{ readonly status: number; readonly body: unknown }> {
+  if (
+    typeof payload !== 'object' ||
+    payload === null ||
+    !('url' in payload) ||
+    typeof (payload as CrawlApiRequest).url !== 'string' ||
+    !(payload as CrawlApiRequest).url.trim()
+  ) {
+    const error: ApiErrorResponse = {
+      error: 'Missing or invalid "url" field in crawl request body.',
+      code: 'INVALID_REQUEST',
+    };
+    return { status: 400, body: error };
+  }
+
+  const { url, maxPages, maxDepth, timeout } = payload as CrawlApiRequest;
+
+  if (
+    maxPages !== undefined &&
+    (typeof maxPages !== 'number' || Number.isNaN(maxPages) || maxPages < 1)
+  ) {
+    return {
+      status: 400,
+      body: {
+        error: 'Invalid "maxPages": must be a positive number.',
+        code: 'INVALID_REQUEST',
+      } satisfies ApiErrorResponse,
+    };
+  }
+
+  if (
+    maxDepth !== undefined &&
+    (typeof maxDepth !== 'number' || Number.isNaN(maxDepth) || maxDepth < 0)
+  ) {
+    return {
+      status: 400,
+      body: {
+        error: 'Invalid "maxDepth": must be zero or positive.',
+        code: 'INVALID_REQUEST',
+      } satisfies ApiErrorResponse,
+    };
+  }
+
+  if (
+    timeout !== undefined &&
+    (typeof timeout !== 'number' || Number.isNaN(timeout) || timeout <= 0)
+  ) {
+    return {
+      status: 400,
+      body: {
+        error: 'Invalid "timeout": must be a positive number.',
+        code: 'INVALID_REQUEST',
+      } satisfies ApiErrorResponse,
+    };
+  }
+
+  try {
+    const crawlResult = await crawlSite(url.trim(), {
+      ...(maxPages !== undefined ? { maxPages } : {}),
+      ...(maxDepth !== undefined ? { maxDepth } : {}),
+      ...(timeout !== undefined ? { navigationTimeoutMs: timeout } : {}),
+    });
+
+    const report = analyzeCrawlResults({
+      seedUrl: crawlResult.seedUrl,
+      pages: crawlResult.pages.map((p) => ({
+        url: p.url,
+        depth: p.depth,
+        scanResult: p.scanResult,
+        error: p.error,
+      })),
+      durationMs: crawlResult.durationMs,
+      startedAt: crawlResult.startedAt,
+    });
+
+    return { status: 200, body: report };
+  } catch (err: unknown) {
+    if (err instanceof ScannerError) {
+      const statusCode =
+        err.code === 'INVALID_URL' ||
+        err.code === 'UNSUPPORTED_PROTOCOL' ||
+        err.code === 'PRIVATE_TARGET'
+          ? 400
+          : 502;
+      return {
+        status: statusCode,
+        body: { error: err.message, code: err.code } satisfies ApiErrorResponse,
+      };
+    }
+
+    const message =
+      err instanceof Error ? err.message : 'Unknown crawl failure.';
+    return {
+      status: 500,
+      body: {
+        error: message,
+        code: 'INTERNAL_ERROR',
+      } satisfies ApiErrorResponse,
+    };
+  }
+}
+
 export function handleExport(payload: unknown): {
   readonly status: number;
   readonly contentType: string;
@@ -113,8 +220,17 @@ export function handleExport(payload: unknown): {
   }
 
   try {
+    const isMultiPage =
+      typeof report === 'object' &&
+      report !== null &&
+      'summary' in report &&
+      'pages' in report &&
+      'commonViolations' in report;
+
     if (format === 'html') {
-      const html = renderHtmlReport(report);
+      const html = isMultiPage
+        ? renderMultiPageHtmlReport(report)
+        : renderHtmlReport(report);
       return {
         status: 200,
         contentType: 'text/html; charset=utf-8',
@@ -122,7 +238,9 @@ export function handleExport(payload: unknown): {
       };
     }
 
-    const json = renderJsonReport(report, { pretty: true });
+    const json = isMultiPage
+      ? renderMultiPageJsonReport(report, { pretty: true })
+      : renderJsonReport(report, { pretty: true });
     return {
       status: 200,
       contentType: 'application/json; charset=utf-8',

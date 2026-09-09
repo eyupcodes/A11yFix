@@ -5,9 +5,11 @@
 import { fileURLToPath } from 'node:url';
 
 import { createProgram, type CreateProgramOptions } from './program.js';
+import { executeCrawl } from './crawl.js';
 import { executeScan } from './scan.js';
 import {
   type CliIo,
+  type CrawlCommandOptions,
   type ExitCode,
   EXIT_CODES,
   type ScanCommandOptions,
@@ -15,12 +17,20 @@ import {
 
 export { createProgram, type CreateProgramOptions };
 export { executeScan };
+export { executeCrawl };
 export {
+  formatCrawlTerminalSummary,
   formatError,
   formatTerminalSummary,
   type FormatSummaryOptions,
 } from './formatters.js';
-export { type CliIo, type ExitCode, EXIT_CODES, type ScanCommandOptions };
+export {
+  type CliIo,
+  type CrawlCommandOptions,
+  type ExitCode,
+  EXIT_CODES,
+  type ScanCommandOptions,
+};
 
 /**
  * Checks whether the current module was directly invoked as the process entry point.

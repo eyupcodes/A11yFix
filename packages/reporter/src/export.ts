@@ -59,7 +59,7 @@ function getErrorMessage(error: unknown): string {
  * @throws {ReporterError} if validation fails, format is unsupported, or write fails.
  */
 export async function writeReport(
-  report: AccessibilityReport,
+  report: AccessibilityReport | import('@a11yfix/core').MultiPageReport,
   outputPath: string,
   options?: WriteReportOptions,
 ): Promise<void> {
@@ -70,8 +70,24 @@ export async function writeReport(
   const htmlOptions =
     options?.title !== undefined ? { title: options.title } : undefined;
 
-  const content =
-    format === 'json'
+  const isMultiPage =
+    typeof report === 'object' &&
+    report !== null &&
+    'summary' in report &&
+    'pages' in report &&
+    'commonViolations' in report;
+
+  const content = isMultiPage
+    ? format === 'json'
+      ? (await import('./multi-page-json.js')).renderMultiPageJsonReport(
+          report,
+          jsonOptions,
+        )
+      : (await import('./multi-page-html.js')).renderMultiPageHtmlReport(
+          report,
+          htmlOptions,
+        )
+    : format === 'json'
       ? renderJsonReport(report, jsonOptions)
       : renderHtmlReport(report, htmlOptions);
 

@@ -16,6 +16,8 @@ export { escapeAttribute, escapeHtml } from './escape.js';
 export { writeReport } from './export.js';
 export { renderHtmlReport } from './html.js';
 export { renderJsonReport } from './json.js';
+export { renderMultiPageHtmlReport } from './multi-page-html.js';
+export { renderMultiPageJsonReport } from './multi-page-json.js';
 
 export type {
   HtmlReportOptions,
@@ -23,4 +25,4 @@ export type {
   ReportFormat,
   WriteReportOptions,
 } from './types.js';
-export { validateReport } from './validate.js';
+export { validateMultiPageReport, validateReport } from './validate.js';

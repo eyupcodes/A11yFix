@@ -194,6 +194,31 @@ Design notes:
 - **Zero framework bloat**: Zero heavy UI component library dependencies; purely built with CSS custom properties and lightweight React 19.
 - **Graceful error mapping**: Server maps low-level `ScannerError` codes (`INVALID_URL`, `NAVIGATION_FAILED`) and `ReporterError` to appropriate HTTP response codes (400, 502, 500) with descriptive JSON payloads.
 
+## Multi-Page Crawling (M9)
+
+`crawlSite(seedUrl, options?)` reuses a single Chromium browser for the entire crawl. The flow is BFS over discovered links:
+
+```text
+seedUrl → validateTargetUrl → chromium.launch (once)
+  queue: [{ url, depth }]  visited: Set<canonicalUrl>
+  while queue not empty && scannedPages < maxPages
+    context.newPage → scanPage (goto + axe) → extractPageLinks (a[href] canonicalization)
+    enqueue unseen same-origin links (depth+1) until maxDepth
+  analyzeCrawlResults → MultiPageReport { summary, pages, commonViolations }
+  renderMultiPageJsonReport / renderMultiPageHtmlReport / writeReport
+```
+
+Design notes:
+
+- **Single browser reuse**: one `chromium.launch` per crawl, one `BrowserContext`, one `Page` per URL closed in `finally`. 10-20x faster than per-page launch.
+- **Link canonicalization** (`links.ts`): resolves relative hrefs against current URL, strips `#fragment`, normalizes trailing slash, rejects `javascript:`/`mailto:`/`tel:`/`data:`, validates via `validateTargetUrl`, enforces `sameOriginOnly` by origin comparison.
+- **BFS + limits**: `maxPages` default 10 max 100, `maxDepth` default 2 max 5, visited set prevents cycles, queue drained breadth-first.
+- **Per-page isolation**: navigation/axe failures captured as `CrawlPageResult.error`; crawl continues until queue exhausted or `maxPages` reached.
+- **Aggregation** (`core/multi-page.ts`): `analyzeCrawlResults` is pure — maps `ScanResult` through `analyzeAxeResults`, mean `siteScore`, `gradeForScore`, groups violations by `ruleId` into `CommonViolation` with `isSiteWide` (`>1` page or `>= ceil(successful/2)`), deterministic sort (site-wide first, severity rank, occurrence desc, ruleId asc).
+- **Reporting**: `renderMultiPageJsonReport`/`renderMultiPageHtmlReport` validate via `validateMultiPageReport`, escape via `escapeHtml`/`escapeAttribute`/`isSafeUrl`, grade-colored site score card, recurring violations and per-page tables.
+- **CLI**: `a11yfix crawl <url>` (`-m/--max-pages`, `-d/--max-depth`, `-o/--output`, `-f/--format`, `-t/--threshold`, `--timeout`, `--json`, `-q/--quiet`) with live `[n] Audited/Skipped url` progress.
+- **Web API**: `POST /api/crawl` (`url`, `maxPages`, `maxDepth`, `timeout`) → `MultiPageReport`; `POST /api/export` now handles both single and multi-page reports.
+
 ## Invariants
 
 - No circular workspace dependencies.

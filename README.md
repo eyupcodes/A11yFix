@@ -20,10 +20,15 @@ A11yFix is an open-source, automated web accessibility scanner aimed at develope
 ## CLI usage
 
 ```sh
-# Scan a URL and display terminal summary
+# Scan a single URL and display terminal summary
 a11yfix scan https://example.com
 
-# Export report to HTML or JSON
+# Crawl an entire site from a seed URL
+a11yfix crawl https://example.com --max-pages 20 --max-depth 2
+a11yfix crawl https://example.com --output site-report.html --format html
+a11yfix crawl https://example.com --threshold 80  # exit 1 if site score < 80
+
+# Export report to HTML or JSON (scan)
 a11yfix scan https://example.com --output report.html
 a11yfix scan https://example.com --output report.json --format json
 

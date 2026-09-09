@@ -5,8 +5,16 @@ export interface ScanApiRequest {
   readonly timeout?: number | undefined;
 }
 
+export interface CrawlApiRequest {
+  readonly url: string;
+  readonly maxPages?: number | undefined;
+  readonly maxDepth?: number | undefined;
+  readonly timeout?: number | undefined;
+}
+
 export interface ExportApiRequest {
-  readonly report: AccessibilityReport;
+  readonly report:
+    AccessibilityReport | import('@a11yfix/core').MultiPageReport;
   readonly format: 'html' | 'json';
 }
 

@@ -33,6 +33,20 @@ export interface CliIo {
 /**
  * Standard exit codes returned by the CLI.
  */
+/**
+ * Options for the `a11yfix crawl <url>` command.
+ */
+export interface CrawlCommandOptions {
+  readonly maxPages?: number | undefined;
+  readonly maxDepth?: number | undefined;
+  readonly output?: string | undefined;
+  readonly format?: ReportFormat | undefined;
+  readonly threshold?: number | undefined;
+  readonly timeout?: number | undefined;
+  readonly json?: boolean | undefined;
+  readonly quiet?: boolean | undefined;
+}
+
 export const EXIT_CODES = {
   /** Scan completed and score meets any specified threshold. */
   SUCCESS: 0,

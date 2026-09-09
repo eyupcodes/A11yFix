@@ -9,10 +9,12 @@
 
 export { analyzeAxeResults } from './normalize.js';
 export type { AnalyzeMeta } from './normalize.js';
+export { analyzeCrawlResults } from './multi-page.js';
 export { CORE_ERROR_CODES, CoreError, isCoreError } from './errors.js';
 export type { CoreErrorCode } from './errors.js';
 export { classifySeverity, severityWeight } from './severity.js';
 export { extractWcag } from './wcag.js';
+export { gradeForScore } from './scoring.js';
 export type {
   AccessibilityReport,
   Finding,
@@ -27,4 +29,10 @@ export type {
   WcagLevel,
   WcagMapping,
   WcagVersion,
+  MultiPageReport,
+  MultiPageSummary,
+  MultiPageItem,
+  CommonViolation,
+  CrawlInput,
+  CrawlInputPage,
 } from './types.js';

@@ -102,6 +102,71 @@ export function formatTerminalSummary(
 }
 
 /**
+ * Formats a MultiPageReport into a human-readable terminal summary string.
+ */
+export function formatCrawlTerminalSummary(
+  report: import('@a11yfix/core').MultiPageReport,
+  options?: FormatSummaryOptions,
+): string {
+  const sep = '='.repeat(60);
+  const sum = report.summary;
+
+  const lines: string[] = [
+    sep,
+    'A11yFix Site Accessibility Crawl Report',
+    sep,
+    `Seed URL:      ${sum.seedUrl}`,
+    `Pages:         ${sum.totalPages} scanned, ${sum.successfulPages} successful, ${sum.failedPages} failed`,
+    `Site Score:    ${sum.siteScore}/100 (Grade ${sum.siteGrade})`,
+    `Violations:    ${sum.totalViolations} &bull; Passes: ${sum.totalPasses} &bull; Duration: ${sum.durationMs} ms`,
+    '-'.repeat(60),
+    'Severity Breakdown:',
+    `  Critical:   ${sum.countsBySeverity.critical}`,
+    `  Serious:    ${sum.countsBySeverity.serious}`,
+    `  Moderate:   ${sum.countsBySeverity.moderate}`,
+    `  Minor:      ${sum.countsBySeverity.minor}`,
+    '-'.repeat(60),
+  ];
+
+  if (report.commonViolations.length > 0) {
+    lines.push(`Recurring Violations (${report.commonViolations.length}):`);
+    for (const v of report.commonViolations) {
+      const siteWide = v.isSiteWide ? ' [Site-wide]' : '';
+      lines.push(
+        `  • [${v.severity.toUpperCase()}] ${v.ruleId}${siteWide} — ${v.occurrenceCount} pages, ${v.totalNodes} nodes`,
+      );
+    }
+    lines.push('-'.repeat(60));
+  }
+
+  lines.push('Per-Page Breakdown:');
+  for (const page of report.pages) {
+    const pageScore = page.report
+      ? `${page.report.score}/100 ${page.report.grade}`
+      : 'Failed';
+    lines.push(
+      `  depth:${page.depth}  ${page.url}  —  ${pageScore}${page.error ? ` (${page.error})` : ''}`,
+    );
+  }
+
+  if (options?.threshold !== undefined) {
+    lines.push('-'.repeat(60));
+    if (sum.siteScore >= options.threshold) {
+      lines.push(
+        `✔ PASS: Site score ${sum.siteScore} meets threshold ${options.threshold}`,
+      );
+    } else {
+      lines.push(
+        `✖ FAIL: Site score ${sum.siteScore} is below threshold ${options.threshold}`,
+      );
+    }
+  }
+
+  lines.push(sep);
+  return lines.join('\n');
+}
+
+/**
  * Formats any thrown error into a clean, actionable message for stderr.
  */
 export function formatError(error: unknown): string {

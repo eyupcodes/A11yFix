@@ -130,3 +130,76 @@ export interface AccessibilityReport {
   /** Scan metadata, null when the caller did not supply it. */
   readonly meta: ScanMeta;
 }
+
+/** An individual page outcome within a multi-page crawl report. */
+export interface MultiPageItem {
+  readonly url: string;
+  readonly depth: number;
+  readonly report: AccessibilityReport | null;
+  readonly error: string | null;
+}
+
+/** Aggregated violation recurring across one or more pages in a crawl. */
+export interface CommonViolation {
+  readonly ruleId: string;
+  readonly severity: Severity;
+  readonly description: string;
+  readonly help: string;
+  readonly wcag: WcagMapping;
+  readonly remediation: Remediation;
+  /** Number of distinct pages where this violation occurred. */
+  readonly occurrenceCount: number;
+  /** URLs of pages where this violation occurred. */
+  readonly pageUrls: readonly string[];
+  /** Total affected DOM elements across all crawled pages. */
+  readonly totalNodes: number;
+  /** True when violation occurs on multiple pages or >= 50% of audited pages. */
+  readonly isSiteWide: boolean;
+}
+
+/** Summary metrics for an entire multi-page site crawl. */
+export interface MultiPageSummary {
+  readonly seedUrl: string;
+  readonly totalPages: number;
+  readonly successfulPages: number;
+  readonly failedPages: number;
+  readonly siteScore: number;
+  readonly siteGrade: Grade;
+  readonly totalViolations: number;
+  readonly totalPasses: number;
+  readonly countsBySeverity: Readonly<Record<Severity, number>>;
+  readonly durationMs: number;
+  readonly scannedAt: string;
+}
+
+/** The complete output of multi-page crawling analysis. */
+export interface MultiPageReport {
+  readonly summary: MultiPageSummary;
+  readonly pages: readonly MultiPageItem[];
+  readonly commonViolations: readonly CommonViolation[];
+}
+
+/** Input contract representing a scanned page for core analysis. */
+export interface CrawlInputPage {
+  readonly url: string;
+  readonly depth: number;
+  readonly scanResult?:
+    | {
+        readonly requestedUrl: string;
+        readonly finalUrl: string;
+        readonly title: string;
+        readonly scannedAt: string;
+        readonly durationMs: number;
+        readonly axe: unknown;
+      }
+    | undefined;
+  readonly error?: string | undefined;
+}
+
+/** Input contract representing a crawl result for core analysis. */
+export interface CrawlInput {
+  readonly seedUrl: string;
+  readonly pages: readonly CrawlInputPage[];
+  readonly durationMs?: number | undefined;
+  readonly startedAt?: string | undefined;
+}

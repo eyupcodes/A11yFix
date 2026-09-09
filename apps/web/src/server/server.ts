@@ -8,7 +8,12 @@ import { readFile, stat } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { handleExport, handleHealth, handleScan } from './handlers.js';
+import {
+  handleCrawl,
+  handleExport,
+  handleHealth,
+  handleScan,
+} from './handlers.js';
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -87,6 +92,26 @@ export function createServer(options: ServerOptions = {}): Server {
         try {
           const body = await parseJsonBody(req);
           const response = await handleScan(body);
+          res.statusCode = response.status;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify(response.body));
+        } catch {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(
+            JSON.stringify({
+              error: 'Malformed JSON payload.',
+              code: 'BAD_JSON',
+            }),
+          );
+        }
+        return;
+      }
+
+      if (path === '/api/crawl' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          const response = await handleCrawl(body);
           res.statusCode = response.status;
           res.setHeader('Content-Type', 'application/json; charset=utf-8');
           res.end(JSON.stringify(response.body));
