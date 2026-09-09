@@ -22,7 +22,7 @@ describe('createProgram', () => {
     expect(program.description()).toBe(
       'Automated web accessibility scanner for developers.',
     );
-    expect(program.version()).toBe('0.0.0');
+    expect(program.version()).toBe('0.1.0');
   });
 
   it('parses options and invokes executeScan', async () => {

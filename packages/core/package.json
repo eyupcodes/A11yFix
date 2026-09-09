@@ -1,6 +1,6 @@
 {
   "name": "@a11yfix/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Normalized accessibility findings, WCAG mapping, severity classification, and scoring.",

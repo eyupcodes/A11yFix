@@ -24,9 +24,9 @@ Add developer-facing scan commands and report output workflows.
 
 Expand unit, integration, and end-to-end coverage across scanner, core, reporter, and CLI workflows.
 
-## M7 GitHub polish / v0.1.0 — next
+## M7 GitHub polish / v0.1.0 — complete
 
-Harden documentation, examples, release readiness, and CI behavior for the first tagged release.
+Harden documentation, runnable examples, release readiness, and monorepo verification for the v0.1.0 release.
 
 ## Future
 

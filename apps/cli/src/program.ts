@@ -44,7 +44,7 @@ export function createProgram(config: CreateProgramOptions = {}): Command {
   program
     .name('a11yfix')
     .description('Automated web accessibility scanner for developers.')
-    .version('0.0.0');
+    .version('0.1.0');
 
   if (config.exitOverride) {
     program.exitOverride();

@@ -1,6 +1,6 @@
 {
   "name": "@a11yfix/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Command-line interface for automated accessibility scanning.",

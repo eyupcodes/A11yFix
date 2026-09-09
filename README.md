@@ -39,21 +39,36 @@ a11yfix scan https://example.com --quiet --output report.html
 
 ## Status
 
-M6 — Tests.
+v0.1.0 — Ready. Milestones M1 through M7 complete.
 
-The repository contains the monorepo foundation, the low-level scanning engine, the core analysis layer, the report generation layer, the developer-facing CLI, and comprehensive test suites:
+The repository contains the monorepo foundation, the low-level scanning engine, the core analysis layer, the report generation layer, the developer-facing CLI, runnable examples, and comprehensive test suites:
 
 - `@a11yfix/scanner` validates target URLs, drives headless Chromium through Playwright, injects axe-core, and produces raw scan results.
 - `@a11yfix/core` normalizes findings, maps WCAG criteria, classifies severity, and scores reports through `analyzeAxeResults`.
 - `@a11yfix/reporter` serializes JSON reports, renders standalone, responsive, accessible HTML reports, and provides file export utilities through `renderJsonReport`, `renderHtmlReport`, and `writeReport`.
 - `@a11yfix/cli` provides the `a11yfix scan <url>` command with formatters, threshold gates, export options, and predictable exit codes (0, 1, 2).
 - Comprehensive test suites verify scanner edge cases and redirects, core scoring boundaries and schema resilience, reporter XSS security and rendering benchmarks, CLI Commander integration with real file export, and end-to-end monorepo pipeline integration with automated self-auditing of generated HTML reports (asserting 0 accessibility violations).
-
-Release preparation and GitHub polish lands in M7.
+- Runnable programmatic examples and documentation live in `examples/`.
 
 ### Scanner security limitation
 
 The local scanner performs obvious private/local target blocking, but full hosted-service SSRF defense will require DNS resolution and post-resolution validation later.
+
+## Programmatic usage
+
+```typescript
+import { analyzeAxeResults } from '@a11yfix/core';
+import { renderHtmlReport, writeReport } from '@a11yfix/reporter';
+import { scanAccessibility } from '@a11yfix/scanner';
+
+const scanResult = await scanAccessibility('https://example.com');
+const report = analyzeAxeResults(scanResult.axe, scanResult);
+
+console.log(`Score: ${report.score}/100 (${report.grade})`);
+await writeReport(report, 'report.html', { format: 'html' });
+```
+
+See [examples/README.md](examples/README.md) for full programmatic and CLI examples.
 
 ## Roadmap
 

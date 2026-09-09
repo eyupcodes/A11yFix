@@ -1,6 +1,6 @@
 # Architecture
 
-A11yFix is a private pnpm/TypeScript monorepo. M1 established workspace and dependency boundaries. M2 adds the low-level scanning engine in `packages/scanner`. M3 adds the core analysis layer in `packages/core`.
+A11yFix is a private pnpm/TypeScript monorepo. M1 established workspace and dependency boundaries. M2 adds the low-level scanning engine in `packages/scanner`. M3 adds the core analysis layer in `packages/core`. M4 adds report generation and serialization in `packages/reporter`. M5 adds the developer CLI in `apps/cli`. M6 provides comprehensive unit, integration, and end-to-end testing with HTML report self-audits. M7 hardens documentation and release readiness for v0.1.0.
 
 ## Workspaces
 
@@ -144,6 +144,28 @@ Design notes:
   - `2` (`EXIT_CODES.INVALID_ARGS`): Invalid arguments (out-of-bounds threshold, invalid timeout) or invalid target URL.
 - **Terminal output**: Pure formatters render structured summaries including target metadata, score badge, severity counts, violations preview, and threshold evaluation status without external terminal styling libraries.
 - **Dependency inversion for I/O**: `executeScan` accepts optional `CliIo` injection (`stdout`, `stderr`), enabling reliable and isolated unit testing.
+
+## Testing Architecture (M6)
+
+Testing spans unit, integration, and full end-to-end scenarios across all workspaces:
+
+1. **Unit Tests**:
+   - `packages/scanner`: URL validation, browser lifecycle, axe injection error handling.
+   - `packages/core`: Zod schema validation, finding normalization, criterion tag parsing, score and grade calculation.
+   - `packages/reporter`: HTML sanitization, attribute escaping, JSON rendering, directory creation and export.
+   - `apps/cli`: Commander argument and option parsing, exit codes, terminal output formatting.
+
+2. **Integration Tests**:
+   - `packages/scanner/src/scanner-integration.test.ts`: Route-intercepted and ephemeral server testing for HTTP redirects (302), custom timeouts, complex DOMs, and Unicode page titles.
+   - `packages/core/src/scoring-edge-cases.test.ts`: Node capping (`min(nodeCount, 10)`), score clamping (0 to 100), grade boundary transitions, and best-practice exclusion.
+   - `packages/reporter/src/xss.test.ts`: Penetration testing for XSS injection vectors across page titles, URLs, element HTML, selectors, and remediation guidance.
+   - `packages/reporter/src/render-edge-cases.test.ts`: Rendering benchmarks for large payloads (500+ nodes) and perfect score (0 violations) representations.
+   - `apps/cli/src/integration.test.ts`: Commander workflow execution with real file export, stdout JSON serialization, and threshold evaluations.
+
+3. **End-to-End (E2E) Pipeline & Self-Audit (`apps/cli/src/e2e.test.ts`)**:
+   - Real HTML target serving through Playwright route interception.
+   - Complete pipeline execution: `scanner` → `core` → `reporter` → `cli`.
+   - Automated self-audit: loads generated HTML reports back into headless Chromium and audits them with axe-core, verifying that A11yFix reports contain 0 accessibility violations.
 
 ## Invariants
 
