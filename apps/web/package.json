@@ -1,0 +1,37 @@
+{
+  "name": "@a11yfix/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Interactive web dashboard for A11yFix accessibility auditing.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsup src/server/server.ts --format esm --target node20 --out-dir dist-server",
+    "preview": "vite preview",
+    "start": "node dist-server/server.js",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@a11yfix/core": "workspace:*",
+    "@a11yfix/reporter": "workspace:*",
+    "@a11yfix/scanner": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vite": "^6.2.0",
+    "vitest": "^4.1.11"
+  }
+}

@@ -1,6 +1,6 @@
 # Architecture
 
-A11yFix is a private pnpm/TypeScript monorepo. M1 established workspace and dependency boundaries. M2 adds the low-level scanning engine in `packages/scanner`. M3 adds the core analysis layer in `packages/core`. M4 adds report generation and serialization in `packages/reporter`. M5 adds the developer CLI in `apps/cli`. M6 provides comprehensive unit, integration, and end-to-end testing with HTML report self-audits. M7 hardens documentation and release readiness for v0.1.0.
+A11yFix is a private pnpm/TypeScript monorepo. M1 established workspace and dependency boundaries. M2 adds the low-level scanning engine in `packages/scanner`. M3 adds the core analysis layer in `packages/core`. M4 adds report generation and serialization in `packages/reporter`. M5 adds the developer CLI in `apps/cli`. M6 provides comprehensive unit, integration, and end-to-end testing with HTML report self-audits. M7 hardens documentation and release readiness for v0.1.0. M8 delivers the interactive web dashboard in `apps/web`.
 
 ## Workspaces
 
@@ -8,33 +8,33 @@ A11yFix is a private pnpm/TypeScript monorepo. M1 established workspace and depe
   - Owns command parsing and developer-facing command execution.
   - Composes scanner and reporter behavior into CLI commands.
   - Depends on scanner, reporter, and core.
+- `apps/web` — `@a11yfix/web`
+  - Owns interactive developer web dashboard with Vite + React 19 frontend and lightweight Node.js API server.
+  - Provides `/api/scan`, `/api/export`, and `/api/health` endpoints.
+  - Depends on scanner, reporter, and core.
 - `packages/scanner` — `@a11yfix/scanner`
   - Owns Playwright browser automation and axe-core audit execution.
   - Depends on core for shared finding representations and validation.
-  - Must not depend on CLI or reporter.
+  - Must not depend on CLI, web, or reporter.
 - `packages/reporter` — `@a11yfix/reporter`
   - Owns report serialization (JSON), standalone accessible HTML rendering, and file export formats.
   - Depends on core for shared finding representations and validation.
-  - Must not depend on CLI or scanner.
+  - Must not depend on CLI, web, or scanner.
 - `packages/core` — `@a11yfix/core`
   - Owns normalized findings, WCAG mapping, severity classification, scoring, remediation models, and validation.
-  - Must not depend on CLI, scanner, or reporter.
+  - Must not depend on CLI, web, scanner, or reporter.
 
 ## Dependency direction
 
 ```text
-CLI
- ↓
-scanner
- ↓
-core
-
-reporter
- ↓
-core
+CLI          Web
+ ↓ ↘        ↙ ↓
+scanner  reporter
+    ↘    ↙
+     core
 ```
 
-The CLI may depend on both scanner and reporter. Scanner and reporter each depend only on core. Core has no workspace dependencies.
+Both `apps/cli` and `apps/web` compose `scanner` and `reporter`. Scanner and reporter each depend only on `core`. Core has no workspace dependencies.
 
 ## Scanner (M2)
 
@@ -166,6 +166,33 @@ Testing spans unit, integration, and full end-to-end scenarios across all worksp
    - Real HTML target serving through Playwright route interception.
    - Complete pipeline execution: `scanner` → `core` → `reporter` → `cli`.
    - Automated self-audit: loads generated HTML reports back into headless Chromium and audits them with axe-core, verifying that A11yFix reports contain 0 accessibility violations.
+
+## Web UI Architecture (M8)
+
+`apps/web` provides a local developer interface combining a lightweight Node.js API server and an accessible React dashboard:
+
+```text
+Browser Client (Vite + React 19)
+ ├→ Header: Brand, WCAG badge, light/dark theme switcher
+ ├→ ScanForm: Accessible input, timeout selector, quick-try presets
+ ├→ ScoreOverview: Score badge (0-100), letter grade (A-F), severity metrics
+ ├→ FilterBar: Severity chips, WCAG search query
+ ├→ FindingCard: Rule details, WCAG criteria, remediation, DOM node snippets
+ └→ ExportActions: One-click HTML & JSON report downloads
+       │ HTTP fetch
+       ▼
+Node.js API Server (node:http)
+ ├→ GET  /api/health: Status check and version verification
+ ├→ POST /api/scan:   Invokes scanner (Playwright) + core (analyzeAxeResults)
+ ├→ POST /api/export: Invokes reporter (renderHtmlReport, renderJsonReport)
+ └→ Static files:     Serves compiled SPA assets in production mode
+```
+
+Design notes:
+
+- **Accessibility first**: Semantic HTML5 landmark roles (`banner`, `main`, `search`, `feed`, `article`), visible focus rings (`:focus-visible`), WCAG 2.1 AA compliant color contrast in both light and dark themes, skip-to-content links, and `aria-live="polite"` live status regions for screen readers.
+- **Zero framework bloat**: Zero heavy UI component library dependencies; purely built with CSS custom properties and lightweight React 19.
+- **Graceful error mapping**: Server maps low-level `ScannerError` codes (`INVALID_URL`, `NAVIGATION_FAILED`) and `ReporterError` to appropriate HTTP response codes (400, 502, 500) with descriptive JSON payloads.
 
 ## Invariants
 

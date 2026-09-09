@@ -37,17 +37,33 @@ a11yfix scan https://example.com --json
 a11yfix scan https://example.com --quiet --output report.html
 ```
 
+## Web dashboard (M8)
+
+A11yFix includes an interactive developer web UI:
+
+```sh
+# Start Vite development server with API proxy
+pnpm --filter @a11yfix/web dev
+
+# Build and start production web app and local API server
+pnpm --filter @a11yfix/web build
+pnpm --filter @a11yfix/web start
+```
+
+Open `http://localhost:5173` (dev) or `http://localhost:3001` (prod) to run audits, filter findings, inspect DOM elements, and export reports directly in the browser.
+
 ## Status
 
-v0.1.0 — Ready. Milestones M1 through M7 complete.
+v0.1.0 — Ready. Milestones M1 through M8 complete.
 
-The repository contains the monorepo foundation, the low-level scanning engine, the core analysis layer, the report generation layer, the developer-facing CLI, runnable examples, and comprehensive test suites:
+The repository contains the monorepo foundation, the low-level scanning engine, the core analysis layer, the report generation layer, the developer-facing CLI, the interactive web dashboard, runnable examples, and comprehensive test suites:
 
 - `@a11yfix/scanner` validates target URLs, drives headless Chromium through Playwright, injects axe-core, and produces raw scan results.
 - `@a11yfix/core` normalizes findings, maps WCAG criteria, classifies severity, and scores reports through `analyzeAxeResults`.
 - `@a11yfix/reporter` serializes JSON reports, renders standalone, responsive, accessible HTML reports, and provides file export utilities through `renderJsonReport`, `renderHtmlReport`, and `writeReport`.
 - `@a11yfix/cli` provides the `a11yfix scan <url>` command with formatters, threshold gates, export options, and predictable exit codes (0, 1, 2).
-- Comprehensive test suites verify scanner edge cases and redirects, core scoring boundaries and schema resilience, reporter XSS security and rendering benchmarks, CLI Commander integration with real file export, and end-to-end monorepo pipeline integration with automated self-auditing of generated HTML reports (asserting 0 accessibility violations).
+- `@a11yfix/web` provides an interactive, accessible React dashboard and local Node.js API server for visual web scanning, real-time filtering, and report downloads.
+- Comprehensive test suites verify scanner edge cases and redirects, core scoring boundaries and schema resilience, reporter XSS security and rendering benchmarks, CLI Commander integration with real file export, web dashboard server and component rendering, and end-to-end monorepo pipeline integration with automated self-auditing of generated HTML reports (asserting 0 accessibility violations).
 - Runnable programmatic examples and documentation live in `examples/`.
 
 ### Scanner security limitation

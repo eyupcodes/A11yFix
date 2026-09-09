@@ -28,9 +28,12 @@ Expand unit, integration, and end-to-end coverage across scanner, core, reporter
 
 Harden documentation, runnable examples, release readiness, and monorepo verification for the v0.1.0 release.
 
+## M8 Web UI — complete
+
+Deliver interactive web dashboard in `apps/web` with Vite + React 19 frontend and lightweight Node.js API server (`/api/scan`, `/api/export`, `/api/health`), WCAG 2.1 AA compliant design tokens, real-time filtering, DOM snippet viewer, and HTML/JSON report downloads.
+
 ## Future
 
-- M8 Web UI
 - M9 Multi-page crawling
 - M10 CI/SARIF
 - M11 Regression tracking
