@@ -295,6 +295,46 @@ Design notes:
 - **Multi-page site crawl diffing**: Tracks canonical page URLs, identifying newly crawled pages (`NEW_PAGE`), missing/removed pages (`REMOVED_PAGE`), and computing aggregate site score deltas.
 - **Zero-regression CI gating**: CLI `--fail-on-regression` with `--baseline <path>` enables automated pull-request checks that block merging when regressions are introduced.
 
+## Remediation (M12)
+
+M12 introduces automated and AI-assisted remediation that translates accessibility violations directly into framework-idiomatic code fixes and unified diffs.
+
+```text
+Accessibility Report / Finding
+       │
+       ▼
+  generateRemediationPatch / generateReportRemediationPlan (core/remediation.ts)
+   ├─ Provider Selection (Heuristic | OpenAI | Anthropic | Custom)
+   ├─ Deterministic Heuristic Engine (core/remediation-heuristics.ts)
+   │    ├─ WCAG rule-specific heuristics (image-alt, button-name, link-name,
+   │    │  color-contrast, label, frame-title, html-has-lang, document-title, etc.)
+   │    └─ Framework adaptation: HTML, React (JSX), Vue, Svelte
+   ├─ Line-based Unified Diff Generation (core/remediation-diff.ts)
+   │    └─ Standard Myers diff headers (--- a/element, +++ b/element)
+   └─ Graceful LLM Fallback (core/remediation-providers.ts)
+        └─ Transparent fallback to heuristics on network error or missing API keys
+       │
+       ├─ Terminal Output (apps/cli)
+       │    ├─ formatRemediationTerminalSummary (colored rules, patches, diffs)
+       │    └─ a11yfix remediate <target> (--framework, --provider, --diff)
+       │
+       ├─ Report Serialization (packages/reporter)
+       │    ├─ renderRemediationJsonReport (structured remediation plan)
+       │    └─ renderRemediationHtmlReport (standalone accessible HTML guide)
+       │
+       └─ Web Dashboard (apps/web)
+            ├─ POST /api/remediate (single finding or whole report)
+            └─ FindingCard "Suggest Fix" assistant with live framework switching & copy
+```
+
+Design notes:
+
+- **Zero-network deterministic heuristics**: High-frequency WCAG violations (`image-alt`, `button-name`, `link-name`, `color-contrast`, `html-has-lang`, `document-title`, `label`, `frame-title`, `target-blank`, `aria-hidden-focus`, `input-image-alt`) resolve immediately without network latency, API costs, or hallucinations.
+- **Framework syntax adaptation**: HTML, React (`className`, `htmlFor`, self-closing JSX tags), Vue (`class`, `for`), and Svelte.
+- **Standard Myers unified diffs**: Generates standard unified diff strings compatible with git tools, code editors, and terminal highlighters.
+- **Pluggable LLM provider abstraction**: Supports OpenAI (`gpt-4o-mini`), Anthropic (`claude-3-5-haiku`), and custom OpenAI-compatible endpoints (Ollama/local models), automatically falling back to heuristic engine whenever API keys are unset or network requests fail.
+- **Strict HTML escaping**: Remediation HTML reports escape all generated code snippets and XSS attack vectors.
+
 ## Invariants
 
 - No circular workspace dependencies.

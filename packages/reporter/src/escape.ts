@@ -37,3 +37,13 @@ export function escapeHtml(value: string | null | undefined): string {
 export function escapeAttribute(value: string | null | undefined): string {
   return escapeHtml(value);
 }
+
+/**
+ * Validates whether a URL uses a safe protocol (http/https) to prevent javascript: XSS.
+ */
+export function isSafeUrl(url: string | null | undefined): boolean {
+  if (!url) {
+    return false;
+  }
+  return /^https?:\/\//i.test(url.trim());
+}

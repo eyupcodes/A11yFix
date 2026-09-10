@@ -2,6 +2,7 @@
  * Types and constants for `@a11yfix/cli`.
  */
 
+import type { RemediationFramework } from '@a11yfix/core';
 import type { ReportFormat } from '@a11yfix/reporter';
 
 /**
@@ -53,6 +54,23 @@ export interface CrawlCommandOptions {
   readonly baseline?: string | undefined;
   /** Exit with code 1 if any new violations (regressions) are detected compared to baseline. */
   readonly failOnRegression?: boolean | undefined;
+}
+
+/**
+ * Options for the `a11yfix remediate <url-or-report-path>` command.
+ */
+export interface RemediateCommandOptions {
+  readonly framework?: RemediationFramework | undefined;
+  readonly provider?:
+    'heuristic' | 'openai' | 'anthropic' | 'custom' | undefined;
+  readonly apiKey?: string | undefined;
+  readonly endpoint?: string | undefined;
+  readonly model?: string | undefined;
+  readonly output?: string | undefined;
+  readonly format?: 'json' | 'html' | undefined;
+  readonly diff?: boolean | undefined;
+  readonly json?: boolean | undefined;
+  readonly quiet?: boolean | undefined;
 }
 
 export const EXIT_CODES = {

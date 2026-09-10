@@ -13,6 +13,7 @@ import {
   handleDiff,
   handleExport,
   handleHealth,
+  handleRemediate,
   handleScan,
 } from './handlers.js';
 
@@ -153,6 +154,26 @@ export function createServer(options: ServerOptions = {}): Server {
         try {
           const body = await parseJsonBody(req);
           const response = handleDiff(body);
+          res.statusCode = response.status;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify(response.body));
+        } catch {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(
+            JSON.stringify({
+              error: 'Malformed JSON payload.',
+              code: 'BAD_JSON',
+            }),
+          );
+        }
+        return;
+      }
+
+      if (path === '/api/remediate' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          const response = await handleRemediate(body);
           res.statusCode = response.status;
           res.setHeader('Content-Type', 'application/json; charset=utf-8');
           res.end(JSON.stringify(response.body));

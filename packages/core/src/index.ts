@@ -22,6 +22,20 @@ export type { CoreErrorCode } from './errors.js';
 export { classifySeverity, severityWeight } from './severity.js';
 export { extractWcag } from './wcag.js';
 export { gradeForScore } from './scoring.js';
+export { generateUnifiedDiff } from './remediation-diff.js';
+export { generateHeuristicFix } from './remediation-heuristics.js';
+export {
+  AnthropicRemediationProvider,
+  CustomRemediationProvider,
+  HeuristicRemediationProvider,
+  OpenAiRemediationProvider,
+  getRemediationProvider,
+} from './remediation-providers.js';
+export type { RemediationProvider } from './remediation-providers.js';
+export {
+  generateRemediationPatch,
+  generateReportRemediationPlan,
+} from './remediation.js';
 export type {
   AccessibilityReport,
   Finding,
@@ -50,4 +64,10 @@ export type {
   ReportDiff,
   RuleDiffSummary,
   SingleReportDiff,
+  RemediationConfidence,
+  RemediationFramework,
+  RemediationOptions,
+  RemediationPatch,
+  ReportRemediationPlan,
+  RuleRemediationResult,
 } from './types.js';

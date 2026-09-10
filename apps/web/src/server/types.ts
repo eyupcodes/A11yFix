@@ -25,6 +25,18 @@ export interface DiffApiRequest {
     AccessibilityReport | import('@a11yfix/core').MultiPageReport;
 }
 
+export interface RemediateApiRequest {
+  readonly report?: AccessibilityReport | undefined;
+  readonly finding?: import('@a11yfix/core').Finding | undefined;
+  readonly nodeIndex?: number | undefined;
+  readonly framework?: import('@a11yfix/core').RemediationFramework | undefined;
+  readonly provider?:
+    'heuristic' | 'openai' | 'anthropic' | 'custom' | undefined;
+  readonly apiKey?: string | undefined;
+  readonly endpoint?: string | undefined;
+  readonly model?: string | undefined;
+}
+
 export interface HealthApiResponse {
   readonly status: 'ok';
   readonly version: string;

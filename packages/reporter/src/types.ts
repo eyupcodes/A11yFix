@@ -32,6 +32,12 @@ export interface DiffHtmlReportOptions {
   readonly title?: string;
 }
 
+/** Options for Remediation HTML report rendering. */
+export interface RemediationHtmlReportOptions {
+  /** Optional custom document title for the HTML remediation report. */
+  readonly title?: string;
+}
+
 /** Options for file export writing. */
 export interface WriteReportOptions {
   /** Explicit output format. If omitted, auto-detected from file extension. */

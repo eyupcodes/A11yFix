@@ -7,6 +7,7 @@ import type {
   DiffViolation,
   Finding,
   ReportDiff,
+  ReportRemediationPlan,
 } from '@a11yfix/core';
 
 export interface FormatSummaryOptions {
@@ -287,6 +288,73 @@ export function formatDiffTerminalSummary(
   }
 
   lines.push(separator);
+  return lines.join('\n');
+}
+
+/**
+ * Formats a remediation plan into a clean, actionable terminal summary.
+ */
+export function formatRemediationTerminalSummary(
+  plan: ReportRemediationPlan,
+  options?: { readonly diff?: boolean | undefined },
+): string {
+  const separator = '━'.repeat(54);
+  const subSeparator = '─'.repeat(54);
+  const lines: string[] = [
+    separator,
+    '  A11yFix Accessibility Remediation Plan',
+    separator,
+    `Framework:   ${plan.framework.toUpperCase()}`,
+    `Provider:    ${plan.provider}`,
+    `Remediated:  ${plan.remediatedCount} of ${plan.totalViolations} violations`,
+    `Generated:   ${plan.generatedAt}`,
+  ];
+
+  if (plan.results.length === 0) {
+    lines.push(subSeparator);
+    lines.push('✔ No accessibility violations requiring remediation.');
+    lines.push(separator);
+    return lines.join('\n');
+  }
+
+  lines.push(subSeparator);
+  lines.push(`Remediation Suggestions (${plan.results.length} rules):`);
+
+  for (let rIdx = 0; rIdx < plan.results.length; rIdx++) {
+    const r = plan.results[rIdx]!;
+    lines.push(`\n  ${rIdx + 1}. [${r.ruleId}] ${r.description}`);
+    if (r.helpUrl) {
+      lines.push(`     Docs: ${r.helpUrl}`);
+    }
+
+    for (let pIdx = 0; pIdx < r.patches.length; pIdx++) {
+      const p = r.patches[pIdx]!;
+      const targetStr = p.target.length > 0 ? ` [${p.target.join(' ')}]` : '';
+      lines.push(
+        `     Node #${pIdx + 1}${targetStr} (${p.confidence.toUpperCase()} confidence):`,
+      );
+      lines.push(`     Explanation: ${p.explanation}`);
+      if (p.changes.length > 0) {
+        for (const change of p.changes) {
+          lines.push(`       • ${change}`);
+        }
+      }
+
+      if (options?.diff && p.diff) {
+        lines.push('     Diff:');
+        for (const dLine of p.diff.split('\n')) {
+          lines.push(`       ${dLine}`);
+        }
+      } else {
+        lines.push('     Fixed Code:');
+        for (const cLine of p.fixedCode.split('\n')) {
+          lines.push(`       ${cLine}`);
+        }
+      }
+    }
+  }
+
+  lines.push('\n' + separator);
   return lines.join('\n');
 }
 

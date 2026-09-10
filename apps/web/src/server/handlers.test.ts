@@ -13,6 +13,7 @@ import {
   handleDiff,
   handleExport,
   handleHealth,
+  handleRemediate,
   handleScan,
 } from './handlers.js';
 
@@ -267,6 +268,119 @@ describe('API Handlers', () => {
       expect(diff.status).toBe('UNCHANGED');
       expect(diff.baselineSiteScore).toBe(95);
       expect(diff.currentSiteScore).toBe(95);
+    });
+  });
+
+  describe('handleRemediate', () => {
+    it('rejects invalid request payload with 400', async () => {
+      const res1 = await handleRemediate(null);
+      expect(res1.status).toBe(400);
+
+      const res2 = await handleRemediate({});
+      expect(res2.status).toBe(400);
+      expect((res2.body as { error: string }).error).toContain(
+        'Either "finding" or "report" must be provided',
+      );
+    });
+
+    it('rejects malformed finding structure with 400', async () => {
+      const res = await handleRemediate({
+        finding: { invalid: true },
+      });
+      expect(res.status).toBe(400);
+      expect((res.body as { code: string }).code).toBe('INVALID_REQUEST');
+    });
+
+    it('generates remediation patch for single finding', async () => {
+      const finding = {
+        ruleId: 'image-alt',
+        description: 'Images must have alternate text',
+        severity: 'critical' as const,
+        wcag: {
+          criteria: ['1.1.1'],
+          level: 'A' as const,
+          isBestPractice: false,
+        },
+        remediation: {
+          summary: 'Add alt attribute',
+          helpUrl: 'https://example.com',
+        },
+        nodes: [
+          {
+            target: ['img.banner'],
+            html: '<img src="banner.png">',
+            failureSummary: 'Element does not have an alt attribute',
+          },
+        ],
+        nodeCount: 1,
+      };
+
+      const res = await handleRemediate({
+        finding,
+        framework: 'react',
+      });
+
+      expect(res.status).toBe(200);
+      const patch = res.body as import('@a11yfix/core').RemediationPatch;
+      expect(patch.ruleId).toBe('image-alt');
+      expect(patch.framework).toBe('react');
+      expect(patch.fixedCode).toContain('alt="Hero banner"');
+      expect(patch.diff).toContain('+<img');
+    });
+
+    it('generates report remediation plan for whole report', async () => {
+      const report = {
+        score: 75,
+        grade: 'C' as const,
+        findings: [
+          {
+            ruleId: 'image-alt',
+            description: 'Images must have alternate text',
+            severity: 'critical' as const,
+            wcag: {
+              criteria: ['1.1.1'],
+              level: 'A' as const,
+              isBestPractice: false,
+            },
+            remediation: {
+              summary: 'Add alt attribute',
+              helpUrl: 'https://example.com',
+            },
+            nodes: [
+              {
+                target: ['img.banner'],
+                html: '<img src="banner.png">',
+                failureSummary: 'Element does not have an alt attribute',
+              },
+            ],
+            nodeCount: 1,
+          },
+        ],
+        breakdown: {
+          totalPenalty: 25,
+          countsBySeverity: { critical: 1, serious: 0, moderate: 0, minor: 0 },
+          scoredFindings: 1,
+          bestPracticeFindings: 0,
+        },
+        meta: {
+          requestedUrl: 'https://example.com',
+          title: 'Example',
+          scannedAt: '2026-09-10T12:00:00.000Z',
+        },
+      };
+
+      const res = await handleRemediate({
+        report,
+        framework: 'html',
+      });
+
+      expect(res.status).toBe(200);
+      const plan = res.body as import('@a11yfix/core').ReportRemediationPlan;
+      expect(plan.totalViolations).toBe(1);
+      expect(plan.remediatedCount).toBe(1);
+      expect(plan.results[0]?.patches[0]?.fixedCode).toContain(
+        'alt="Hero banner"',
+      );
     });
   });
 });

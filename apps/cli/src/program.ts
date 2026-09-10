@@ -5,11 +5,13 @@
 import { Command, InvalidArgumentError } from 'commander';
 
 import { executeCrawl } from './crawl.js';
+import { executeRemediate } from './remediate.js';
 import { executeScan } from './scan.js';
 import {
   type CliIo,
   type CrawlCommandOptions,
   EXIT_CODES,
+  type RemediateCommandOptions,
   type ScanCommandOptions,
 } from './types.js';
 
@@ -238,6 +240,91 @@ export function createProgram(config: CreateProgramOptions = {}): Command {
         };
 
         const exitCode = await executeCrawl(url, crawlOptions, config.io);
+        if (exitCode !== EXIT_CODES.SUCCESS) {
+          process.exitCode = exitCode;
+        }
+      },
+    );
+
+  program
+    .command('remediate <target>')
+    .description(
+      'Generate code remediation suggestions for a URL or prior report JSON file.',
+    )
+    .option(
+      '--framework <framework>',
+      'target syntax framework (html, react, vue, svelte)',
+    )
+    .option(
+      '--provider <provider>',
+      'remediation provider (heuristic, openai, anthropic, custom)',
+    )
+    .option('--api-key <key>', 'LLM provider API key')
+    .option('--endpoint <url>', 'custom LLM endpoint URL')
+    .option('--model <model>', 'custom LLM model name')
+    .option('-o, --output <path>', 'file path to save remediation plan')
+    .option('-f, --format <format>', 'export format (json or html)')
+    .option('--diff', 'display unified diffs in terminal output')
+    .option('--json', 'output raw remediation plan as JSON to stdout')
+    .option('-q, --quiet', 'suppress terminal output')
+    .action(
+      async (
+        target: string,
+        cmdOptions: {
+          framework?: string;
+          provider?: string;
+          apiKey?: string;
+          endpoint?: string;
+          model?: string;
+          output?: string;
+          format?: string;
+          diff?: boolean;
+          json?: boolean;
+          quiet?: boolean;
+        },
+      ) => {
+        const remediateOptions: RemediateCommandOptions = {
+          ...(cmdOptions.framework !== undefined
+            ? {
+                framework:
+                  cmdOptions.framework as RemediateCommandOptions['framework'],
+              }
+            : {}),
+          ...(cmdOptions.provider !== undefined
+            ? {
+                provider:
+                  cmdOptions.provider as RemediateCommandOptions['provider'],
+              }
+            : {}),
+          ...(cmdOptions.apiKey !== undefined
+            ? { apiKey: cmdOptions.apiKey }
+            : {}),
+          ...(cmdOptions.endpoint !== undefined
+            ? { endpoint: cmdOptions.endpoint }
+            : {}),
+          ...(cmdOptions.model !== undefined
+            ? { model: cmdOptions.model }
+            : {}),
+          ...(cmdOptions.output !== undefined
+            ? { output: cmdOptions.output }
+            : {}),
+          ...(cmdOptions.format !== undefined
+            ? {
+                format: cmdOptions.format as RemediateCommandOptions['format'],
+              }
+            : {}),
+          ...(cmdOptions.diff !== undefined ? { diff: cmdOptions.diff } : {}),
+          ...(cmdOptions.json !== undefined ? { json: cmdOptions.json } : {}),
+          ...(cmdOptions.quiet !== undefined
+            ? { quiet: cmdOptions.quiet }
+            : {}),
+        };
+
+        const exitCode = await executeRemediate(
+          target,
+          remediateOptions,
+          config.io,
+        );
         if (exitCode !== EXIT_CODES.SUCCESS) {
           process.exitCode = exitCode;
         }

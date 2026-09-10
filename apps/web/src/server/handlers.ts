@@ -2,6 +2,8 @@ import {
   analyzeAxeResults,
   analyzeCrawlResults,
   diffReports,
+  generateRemediationPatch,
+  generateReportRemediationPlan,
   isCoreError,
 } from '@a11yfix/core';
 import {
@@ -20,6 +22,7 @@ import type {
   DiffApiRequest,
   ExportApiRequest,
   HealthApiResponse,
+  RemediateApiRequest,
   ScanApiRequest,
 } from './types.js';
 
@@ -319,6 +322,103 @@ export function handleDiff(payload: unknown): {
 
     const message =
       err instanceof Error ? err.message : 'Unknown diff calculation failure.';
+    return {
+      status: 500,
+      body: {
+        error: message,
+        code: 'INTERNAL_ERROR',
+      } satisfies ApiErrorResponse,
+    };
+  }
+}
+
+export async function handleRemediate(
+  payload: unknown,
+): Promise<{ readonly status: number; readonly body: unknown }> {
+  if (typeof payload !== 'object' || payload === null) {
+    return {
+      status: 400,
+      body: {
+        error: 'Invalid request body.',
+        code: 'INVALID_REQUEST',
+      } satisfies ApiErrorResponse,
+    };
+  }
+
+  const req = payload as RemediateApiRequest;
+
+  if (!req.finding && !req.report) {
+    return {
+      status: 400,
+      body: {
+        error:
+          'Either "finding" or "report" must be provided in remediation request body.',
+        code: 'INVALID_REQUEST',
+      } satisfies ApiErrorResponse,
+    };
+  }
+
+  const options = {
+    framework: req.framework,
+    provider: req.provider,
+    apiKey: req.apiKey,
+    endpoint: req.endpoint,
+    model: req.model,
+  };
+
+  try {
+    if (req.finding) {
+      if (
+        typeof req.finding !== 'object' ||
+        req.finding === null ||
+        typeof req.finding.ruleId !== 'string' ||
+        !Array.isArray(req.finding.nodes)
+      ) {
+        return {
+          status: 400,
+          body: {
+            error: 'Invalid "finding" object structure.',
+            code: 'INVALID_REQUEST',
+          } satisfies ApiErrorResponse,
+        };
+      }
+
+      const patch = await generateRemediationPatch(
+        req.finding,
+        req.nodeIndex,
+        options,
+      );
+      return { status: 200, body: patch };
+    }
+
+    if (
+      typeof req.report !== 'object' ||
+      req.report === null ||
+      !Array.isArray(req.report.findings)
+    ) {
+      return {
+        status: 400,
+        body: {
+          error: 'Invalid "report" object structure.',
+          code: 'INVALID_REQUEST',
+        } satisfies ApiErrorResponse,
+      };
+    }
+
+    const plan = await generateReportRemediationPlan(req.report, options);
+    return { status: 200, body: plan };
+  } catch (err: unknown) {
+    if (isCoreError(err)) {
+      return {
+        status: 400,
+        body: { error: err.message, code: err.code } satisfies ApiErrorResponse,
+      };
+    }
+
+    const message =
+      err instanceof Error
+        ? err.message
+        : 'Unknown remediation generation failure.';
     return {
       status: 500,
       body: {

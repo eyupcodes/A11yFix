@@ -291,3 +291,50 @@ export interface MultiPageReportDiff {
 
 /** Discriminated union of single-page or multi-page report diff results. */
 export type ReportDiff = SingleReportDiff | MultiPageReportDiff;
+
+/** Supported frontend target frameworks for remediation code generation. */
+export type RemediationFramework = 'html' | 'react' | 'vue' | 'svelte';
+
+/** Confidence rating for a generated remediation patch. */
+export type RemediationConfidence = 'high' | 'medium' | 'low';
+
+/** Code patch proposing a fix for an accessibility violation node. */
+export interface RemediationPatch {
+  readonly ruleId: string;
+  readonly target: readonly string[];
+  readonly originalHtml: string;
+  readonly fixedCode: string;
+  readonly explanation: string;
+  readonly framework: RemediationFramework;
+  readonly confidence: RemediationConfidence;
+  readonly changes: readonly string[];
+  readonly diff: string;
+}
+
+/** Remediation patches associated with a specific rule violation. */
+export interface RuleRemediationResult {
+  readonly ruleId: string;
+  readonly description: string;
+  readonly helpUrl: string;
+  readonly patches: readonly RemediationPatch[];
+}
+
+/** Complete remediation plan across an audit report. */
+export interface ReportRemediationPlan {
+  readonly totalViolations: number;
+  readonly remediatedCount: number;
+  readonly framework: RemediationFramework;
+  readonly provider: string;
+  readonly results: readonly RuleRemediationResult[];
+  readonly generatedAt: string;
+}
+
+/** Configuration options for generating remediation code patches. */
+export interface RemediationOptions {
+  readonly framework?: RemediationFramework | undefined;
+  readonly provider?:
+    'heuristic' | 'openai' | 'anthropic' | 'custom' | undefined;
+  readonly apiKey?: string | undefined;
+  readonly endpoint?: string | undefined;
+  readonly model?: string | undefined;
+}
