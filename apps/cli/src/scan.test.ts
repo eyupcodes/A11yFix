@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+
 import type { AccessibilityReport } from '@a11yfix/core';
 import { analyzeAxeResults } from '@a11yfix/core';
 import { renderJsonReport, writeReport } from '@a11yfix/reporter';
@@ -6,6 +8,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { executeScan } from './scan.js';
 import { type CliIo, EXIT_CODES } from './types.js';
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return {
+    ...actual,
+    readFile: vi.fn(),
+  };
+});
 
 vi.mock('@a11yfix/scanner', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@a11yfix/scanner')>();
@@ -248,5 +258,125 @@ describe('executeScan', () => {
     expect(stderrLogs.join('\n')).toContain(
       'Error [NAVIGATION_FAILED]: Navigation timed out',
     );
+  });
+
+  describe('baseline regression tracking', () => {
+    it('returns INVALID_ARGS when --fail-on-regression is used without --baseline', async () => {
+      const exitCode = await executeScan(
+        'https://example.com',
+        { failOnRegression: true },
+        testIo,
+      );
+
+      expect(exitCode).toBe(EXIT_CODES.INVALID_ARGS);
+      expect(stderrLogs.join('\n')).toContain(
+        '--fail-on-regression requires a baseline report',
+      );
+    });
+
+    it('returns INVALID_ARGS when baseline file does not exist', async () => {
+      vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'));
+
+      const exitCode = await executeScan(
+        'https://example.com',
+        { baseline: 'nonexistent.json' },
+        testIo,
+      );
+
+      expect(exitCode).toBe(EXIT_CODES.INVALID_ARGS);
+      expect(stderrLogs.join('\n')).toContain('INVALID_BASELINE');
+    });
+
+    it('returns INVALID_ARGS when baseline file is not valid JSON', async () => {
+      vi.mocked(readFile).mockResolvedValue('not json {[');
+
+      const exitCode = await executeScan(
+        'https://example.com',
+        { baseline: 'corrupt.json' },
+        testIo,
+      );
+
+      expect(exitCode).toBe(EXIT_CODES.INVALID_ARGS);
+      expect(stderrLogs.join('\n')).toContain('INVALID_BASELINE');
+    });
+
+    it('outputs diff summary and succeeds when baseline matches current', async () => {
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(MOCK_REPORT));
+
+      const exitCode = await executeScan(
+        'https://example.com',
+        { baseline: 'baseline.json' },
+        testIo,
+      );
+
+      expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(stdoutLogs.join('\n')).toContain(
+        'A11yFix Accessibility Regression Diff Report',
+      );
+      expect(stdoutLogs.join('\n')).toContain('UNCHANGED');
+      expect(stdoutLogs.join('\n')).toContain('No new regressions detected.');
+    });
+
+    it('returns FAILURE with --fail-on-regression when new violations are introduced', async () => {
+      // Baseline had 0 findings, current has 1 finding
+      const cleanBaseline = {
+        ...MOCK_REPORT,
+        findings: [],
+        score: 100,
+        breakdown: { ...MOCK_REPORT.breakdown, totalPenalty: 0 },
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(cleanBaseline));
+
+      const currentWithFinding = {
+        ...MOCK_REPORT,
+        findings: [
+          {
+            ruleId: 'image-alt',
+            severity: 'critical' as const,
+            wcag: {
+              criteria: ['1.1.1'],
+              level: 'A' as const,
+              version: '2.0' as const,
+              isBestPractice: false,
+            },
+            description: 'Images must have alternate text',
+            help: 'Images must have alternate text',
+            nodes: [{ html: '<img>', target: ['img'], failureSummary: null }],
+            nodeCount: 1,
+            remediation: { summary: 'Add alt', details: '', helpUrl: '' },
+          },
+        ],
+        score: 85,
+      };
+      vi.mocked(analyzeAxeResults).mockReturnValue(currentWithFinding);
+
+      const exitCode = await executeScan(
+        'https://example.com',
+        { baseline: 'clean.json', failOnRegression: true },
+        testIo,
+      );
+
+      expect(exitCode).toBe(EXIT_CODES.FAILURE);
+      expect(stdoutLogs.join('\n')).toContain('REGRESSION GATE FAILED');
+      expect(stdoutLogs.join('\n')).toContain('image-alt');
+    });
+
+    it('outputs diff JSON when --json flag is passed with baseline', async () => {
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(MOCK_REPORT));
+
+      const exitCode = await executeScan(
+        'https://example.com',
+        { baseline: 'baseline.json', json: true },
+        testIo,
+      );
+
+      expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+      const parsed = JSON.parse(stdoutLogs[0]!) as {
+        readonly kind: string;
+        readonly status: string;
+      };
+      expect(parsed.kind).toBe('single');
+      expect(parsed.status).toBe('UNCHANGED');
+    });
   });
 });

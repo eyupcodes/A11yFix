@@ -37,6 +37,13 @@ a11yfix crawl https://example.com --output site.sarif --format sarif
 # CI threshold gate (fails with exit code 1 if score < 80)
 a11yfix scan https://example.com --threshold 80
 
+# Regression tracking against baseline report
+a11yfix scan https://example.com --baseline baseline-report.json
+
+# Strict zero-regression CI gate (fails with exit code 1 if new violations appear)
+a11yfix scan https://example.com --baseline baseline-report.json --fail-on-regression
+a11yfix crawl https://example.com --baseline site-baseline.json --fail-on-regression
+
 # Output raw JSON to stdout for piping
 a11yfix scan https://example.com --json
 
@@ -61,15 +68,15 @@ Open `http://localhost:5173` (dev) or `http://localhost:3001` (prod) to run audi
 
 ## Status
 
-v0.1.0 — Ready. Milestones M1 through M10 complete.
+v0.1.0 — Ready. Milestones M1 through M11 complete.
 
 The repository contains the monorepo foundation, the low-level scanning engine, the core analysis layer, the report generation layer, the developer-facing CLI, the interactive web dashboard, runnable examples, and comprehensive test suites:
 
 - `@a11yfix/scanner` validates target URLs, drives headless Chromium through Playwright, injects axe-core, crawls full websites via BFS, and produces raw scan results.
-- `@a11yfix/core` normalizes findings, maps WCAG criteria, classifies severity, aggregates multi-page crawl results, and scores reports through `analyzeAxeResults`.
-- `@a11yfix/reporter` serializes JSON reports, renders standalone, responsive, accessible HTML reports, generates OASIS SARIF v2.1.0 reports for GitHub Code Scanning, and provides file export utilities through `renderJsonReport`, `renderHtmlReport`, `renderSarifReport`, and `writeReport`.
-- `@a11yfix/cli` provides `a11yfix scan <url>` and `a11yfix crawl <url>` commands with formatters, threshold gates, export options (html, json, sarif), and predictable exit codes (0, 1, 2).
-- `@a11yfix/web` provides an interactive, accessible React dashboard and local Node.js API server for visual web scanning, real-time filtering, and report downloads.
+- `@a11yfix/core` normalizes findings, maps WCAG criteria, classifies severity, aggregates multi-page crawl results, calculates multiset baseline regression diffs with element-level fingerprinting, and scores reports through `analyzeAxeResults`.
+- `@a11yfix/reporter` serializes JSON reports, renders standalone, responsive, accessible HTML reports, generates OASIS SARIF v2.1.0 reports for GitHub Code Scanning, renders accessible HTML/JSON diff comparison reports, and provides file export utilities through `renderJsonReport`, `renderHtmlReport`, `renderSarifReport`, `renderDiffHtmlReport`, `renderDiffJsonReport`, and `writeReport`.
+- `@a11yfix/cli` provides `a11yfix scan <url>` and `a11yfix crawl <url>` commands with formatters, threshold gates, baseline regression comparison (`-b, --baseline`), zero-regression CI enforcement (`--fail-on-regression`), export options (html, json, sarif), and predictable exit codes (0, 1, 2).
+- `@a11yfix/web` provides an interactive, accessible React dashboard and local Node.js API server for visual web scanning, real-time filtering, report downloads, and diff calculations (`POST /api/diff`).
 - Comprehensive test suites verify scanner edge cases and redirects, core scoring boundaries and schema resilience, reporter XSS security and rendering benchmarks, CLI Commander integration with real file export, web dashboard server and component rendering, and end-to-end monorepo pipeline integration with automated self-auditing of generated HTML reports (asserting 0 accessibility violations).
 - Runnable programmatic examples and documentation live in `examples/`.
 
@@ -80,15 +87,26 @@ The local scanner performs obvious private/local target blocking, but full hoste
 ## Programmatic usage
 
 ```typescript
-import { analyzeAxeResults } from '@a11yfix/core';
-import { renderHtmlReport, writeReport } from '@a11yfix/reporter';
+import { analyzeAxeResults, diffReports } from '@a11yfix/core';
+import {
+  renderDiffHtmlReport,
+  renderHtmlReport,
+  writeReport,
+} from '@a11yfix/reporter';
 import { scanAccessibility } from '@a11yfix/scanner';
 
+// Audit a URL
 const scanResult = await scanAccessibility('https://example.com');
 const report = analyzeAxeResults(scanResult.axe, scanResult);
 
 console.log(`Score: ${report.score}/100 (${report.grade})`);
 await writeReport(report, 'report.html', { format: 'html' });
+
+// Track regressions against a baseline audit
+const diff = diffReports(baselineReport, report);
+console.log(`Status: ${diff.status} (Score delta: ${diff.scoreDelta})`);
+console.log(`New violations (regressions): ${diff.newViolations.length}`);
+const diffHtml = renderDiffHtmlReport(diff);
 ```
 
 See [examples/README.md](examples/README.md) for full programmatic and CLI examples.
@@ -103,14 +121,13 @@ See [examples/README.md](examples/README.md) for full programmatic and CLI examp
 - Scoring
 - JSON report
 - HTML report
+- Web UI
+- Multi-page scanning
+- SARIF & GitHub Actions integration
+- Regression tracking & gating
 
 ### Later
 
-- Web UI
-- Multi-page scanning
-- SARIF
-- GitHub Actions integration
-- Regression detection
 - Framework-aware fixes
 - Optional AI remediation assistance
 

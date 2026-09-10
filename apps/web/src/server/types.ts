@@ -18,6 +18,13 @@ export interface ExportApiRequest {
   readonly format: 'html' | 'json' | 'sarif';
 }
 
+export interface DiffApiRequest {
+  readonly baseline:
+    AccessibilityReport | import('@a11yfix/core').MultiPageReport;
+  readonly current:
+    AccessibilityReport | import('@a11yfix/core').MultiPageReport;
+}
+
 export interface HealthApiResponse {
   readonly status: 'ok';
   readonly version: string;

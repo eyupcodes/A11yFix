@@ -102,4 +102,27 @@ describe('createProgram', () => {
       ]),
     ).rejects.toThrow();
   });
+
+  it('parses --baseline and --fail-on-regression flags', async () => {
+    const program = createProgram({ exitOverride: true });
+
+    await program.parseAsync([
+      'node',
+      'a11yfix',
+      'scan',
+      'https://example.com',
+      '--baseline',
+      'baseline.json',
+      '--fail-on-regression',
+    ]);
+
+    expect(executeScan).toHaveBeenCalledWith(
+      'https://example.com',
+      {
+        baseline: 'baseline.json',
+        failOnRegression: true,
+      },
+      undefined,
+    );
+  });
 });

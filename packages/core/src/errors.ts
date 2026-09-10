@@ -10,6 +10,7 @@
 export const CORE_ERROR_CODES = [
   'INVALID_AXE_RESULTS',
   'UNSUPPORTED_AXE_SHAPE',
+  'INVALID_REPORT',
 ] as const;
 
 export type CoreErrorCode = (typeof CORE_ERROR_CODES)[number];

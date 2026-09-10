@@ -20,6 +20,10 @@ export interface ScanCommandOptions {
   readonly json?: boolean | undefined;
   /** Suppress decorative terminal output. */
   readonly quiet?: boolean | undefined;
+  /** File path to prior baseline report JSON for regression comparison. */
+  readonly baseline?: string | undefined;
+  /** Exit with code 1 if any new violations (regressions) are detected compared to baseline. */
+  readonly failOnRegression?: boolean | undefined;
 }
 
 /**
@@ -45,6 +49,10 @@ export interface CrawlCommandOptions {
   readonly timeout?: number | undefined;
   readonly json?: boolean | undefined;
   readonly quiet?: boolean | undefined;
+  /** File path to prior baseline report JSON for regression comparison. */
+  readonly baseline?: string | undefined;
+  /** Exit with code 1 if any new violations (regressions) are detected compared to baseline. */
+  readonly failOnRegression?: boolean | undefined;
 }
 
 export const EXIT_CODES = {

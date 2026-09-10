@@ -203,3 +203,91 @@ export interface CrawlInput {
   readonly durationMs?: number | undefined;
   readonly startedAt?: string | undefined;
 }
+
+/** Regression and progress status between baseline and current audit. */
+export type DiffStatus = 'REGRESSED' | 'IMPROVED' | 'UNCHANGED' | 'MIXED';
+
+/** Representation of an individual violation occurrence in a diff. */
+export interface DiffViolation {
+  readonly ruleId: string;
+  readonly severity: Severity;
+  readonly help: string;
+  readonly description: string;
+  readonly target: readonly string[];
+  readonly html: string;
+  readonly failureSummary: string | null;
+  readonly helpUrl?: string;
+  readonly pageUrl?: string;
+}
+
+/** Rule-level delta summary between baseline and current audit. */
+export interface RuleDiffSummary {
+  readonly ruleId: string;
+  readonly severity: Severity;
+  readonly help: string;
+  readonly baselineCount: number;
+  readonly currentCount: number;
+  readonly delta: number;
+}
+
+/** Diff summary metrics across all findings. */
+export interface DiffCounts {
+  readonly baselineTotal: number;
+  readonly currentTotal: number;
+  readonly newCount: number;
+  readonly fixedCount: number;
+  readonly persistentCount: number;
+}
+
+/** Diff result comparing two AccessibilityReport instances. */
+export interface SingleReportDiff {
+  readonly kind: 'single';
+  readonly baselineScore: number;
+  readonly currentScore: number;
+  readonly scoreDelta: number;
+  readonly baselineGrade: Grade;
+  readonly currentGrade: Grade;
+  readonly status: DiffStatus;
+  readonly newViolations: readonly DiffViolation[];
+  readonly fixedViolations: readonly DiffViolation[];
+  readonly persistentViolations: readonly DiffViolation[];
+  readonly rulesSummary: readonly RuleDiffSummary[];
+  readonly counts: DiffCounts;
+}
+
+/** Page-level diff outcome in a multi-page crawl comparison. */
+export interface PageDiffItem {
+  readonly url: string;
+  readonly status:
+    | 'NEW_PAGE'
+    | 'REMOVED_PAGE'
+    | 'REGRESSED'
+    | 'IMPROVED'
+    | 'UNCHANGED'
+    | 'MIXED';
+  readonly baselineScore: number | null;
+  readonly currentScore: number | null;
+  readonly scoreDelta: number | null;
+  readonly newCount: number;
+  readonly fixedCount: number;
+  readonly persistentCount: number;
+}
+
+/** Diff result comparing two MultiPageReport instances. */
+export interface MultiPageReportDiff {
+  readonly kind: 'multi-page';
+  readonly baselineSiteScore: number;
+  readonly currentSiteScore: number;
+  readonly scoreDelta: number;
+  readonly baselineGrade: Grade;
+  readonly currentGrade: Grade;
+  readonly status: DiffStatus;
+  readonly newViolations: readonly DiffViolation[];
+  readonly fixedViolations: readonly DiffViolation[];
+  readonly persistentViolations: readonly DiffViolation[];
+  readonly pages: readonly PageDiffItem[];
+  readonly counts: DiffCounts;
+}
+
+/** Discriminated union of single-page or multi-page report diff results. */
+export type ReportDiff = SingleReportDiff | MultiPageReportDiff;

@@ -9,7 +9,12 @@ import {
 import { scanAccessibility, ScannerError } from '@a11yfix/scanner';
 import { describe, expect, it, vi } from 'vitest';
 
-import { handleExport, handleHealth, handleScan } from './handlers.js';
+import {
+  handleDiff,
+  handleExport,
+  handleHealth,
+  handleScan,
+} from './handlers.js';
 
 vi.mock('@a11yfix/scanner', () => ({
   scanAccessibility: vi.fn(),
@@ -22,9 +27,13 @@ vi.mock('@a11yfix/scanner', () => ({
   },
 }));
 
-vi.mock('@a11yfix/core', () => ({
-  analyzeAxeResults: vi.fn(),
-}));
+vi.mock('@a11yfix/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@a11yfix/core')>();
+  return {
+    ...actual,
+    analyzeAxeResults: vi.fn(),
+  };
+});
 
 vi.mock('@a11yfix/reporter', () => ({
   renderHtmlReport: vi.fn(),
@@ -185,6 +194,79 @@ describe('API Handlers', () => {
       expect(res.status).toBe(400);
       const errorBody = JSON.parse(res.body) as { code: string };
       expect(errorBody.code).toBe('INVALID_REPORT');
+    });
+  });
+
+  describe('handleDiff', () => {
+    it('returns 400 INVALID_REQUEST when body is invalid', () => {
+      expect(handleDiff(null).status).toBe(400);
+      expect(handleDiff({}).status).toBe(400);
+      expect(handleDiff({ baseline: mockReport }).status).toBe(400);
+      expect(handleDiff({ current: mockReport }).status).toBe(400);
+    });
+
+    it('returns 400 when reports are invalid or mismatched', () => {
+      const res = handleDiff({
+        baseline: { invalid: true },
+        current: mockReport,
+      });
+      expect(res.status).toBe(400);
+      const body = res.body as { code: string };
+      expect(body.code).toBe('INVALID_REPORT');
+    });
+
+    it('returns 200 with SingleReportDiff for valid single-page reports', () => {
+      const res = handleDiff({
+        baseline: mockReport,
+        current: mockReport,
+      });
+
+      expect(res.status).toBe(200);
+      const diff = res.body as import('@a11yfix/core').SingleReportDiff;
+      expect(diff.kind).toBe('single');
+      expect(diff.status).toBe('UNCHANGED');
+      expect(diff.baselineScore).toBe(95);
+      expect(diff.currentScore).toBe(95);
+      expect(diff.scoreDelta).toBe(0);
+    });
+
+    it('returns 200 with MultiPageReportDiff for valid multi-page reports', () => {
+      const multiReport = {
+        summary: {
+          seedUrl: 'https://example.com/',
+          totalPages: 1,
+          successfulPages: 1,
+          failedPages: 0,
+          siteScore: 95,
+          siteGrade: 'A' as const,
+          totalViolations: 0,
+          totalPasses: 10,
+          countsBySeverity: { critical: 0, serious: 0, moderate: 0, minor: 0 },
+          durationMs: 200,
+          scannedAt: '2026-09-09T00:00:00.000Z',
+        },
+        pages: [
+          {
+            url: 'https://example.com/',
+            depth: 0,
+            report: mockReport,
+            error: null,
+          },
+        ],
+        commonViolations: [],
+      };
+
+      const res = handleDiff({
+        baseline: multiReport,
+        current: multiReport,
+      });
+
+      expect(res.status).toBe(200);
+      const diff = res.body as import('@a11yfix/core').MultiPageReportDiff;
+      expect(diff.kind).toBe('multi-page');
+      expect(diff.status).toBe('UNCHANGED');
+      expect(diff.baselineSiteScore).toBe(95);
+      expect(diff.currentSiteScore).toBe(95);
     });
   });
 });

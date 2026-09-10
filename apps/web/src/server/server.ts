@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   handleCrawl,
+  handleDiff,
   handleExport,
   handleHealth,
   handleScan,
@@ -135,6 +136,26 @@ export function createServer(options: ServerOptions = {}): Server {
           res.statusCode = response.status;
           res.setHeader('Content-Type', response.contentType);
           res.end(response.body);
+        } catch {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(
+            JSON.stringify({
+              error: 'Malformed JSON payload.',
+              code: 'BAD_JSON',
+            }),
+          );
+        }
+        return;
+      }
+
+      if (path === '/api/diff' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          const response = handleDiff(body);
+          res.statusCode = response.status;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify(response.body));
         } catch {
           res.statusCode = 400;
           res.setHeader('Content-Type', 'application/json; charset=utf-8');

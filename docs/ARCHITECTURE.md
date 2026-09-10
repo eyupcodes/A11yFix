@@ -253,6 +253,48 @@ Design notes:
 - **Web API**: `POST /api/export` supports `format: 'sarif'` returning `application/sarif+json; charset=utf-8`.
 - **CI action**: sample `.github/workflows/accessibility-scan.yml` runs scan, exports SARIF, and uploads via `github/codeql-action/upload-sarif@v3`.
 
+## Regression Tracking (M11)
+
+`diffReports(baseline, current)` in `@a11yfix/core` performs pure multiset (bag) difference analysis between prior baseline audit reports and current scans.
+
+```text
+Baseline Report + Current Report
+       │
+       ▼
+  diffReports (core/diff.ts)
+   ├─ Polymorphic dispatch (single-page vs. multi-page crawl)
+   ├─ Element-level fingerprinting: `${pageUrl}::${ruleId}::${target}::${html}`
+   ├─ Multiset occurrence comparison:
+   │    ├─ Current > Baseline: New Violations (Regressions)
+   │    ├─ Baseline > Current: Fixed Violations (Resolved)
+   │    └─ min(Baseline, Current): Persistent Violations (Unchanged)
+   ├─ Status classification: REGRESSED | IMPROVED | MIXED | UNCHANGED
+   └─ Score delta calculation: currentScore - baselineScore
+       │
+       ├─ Terminal Output (apps/cli)
+       │    ├─ formatDiffTerminalSummary (score transition, regression table)
+       │    └─ CI gate: --fail-on-regression (exit code 1 on regressions)
+       │
+       ├─ Report Serialization (packages/reporter)
+       │    ├─ renderDiffJsonReport (structured JSON diff)
+       │    └─ renderDiffHtmlReport (accessible HTML report with delta banner & details)
+       │
+       └─ Web API (apps/web)
+            └─ POST /api/diff (accepts { baseline, current } payload)
+```
+
+Design notes:
+
+- **Mathematical multiset diffing**: Handles identical selectors and repeated elements without requiring fragile synthetic IDs or DOM mutation tracking.
+- **Fingerprinting scheme**: Normalizes whitespace in outer HTML and targets to ensure deterministic matching across Playwright sessions. Document-level rules without target nodes fall back to `${pageUrl}::${ruleId}::<root>`.
+- **Status rules**:
+  - `REGRESSED`: New violations introduced, or score dropped with no fixes.
+  - `IMPROVED`: Existing violations resolved and zero new violations introduced.
+  - `MIXED`: Both new violations and fixed violations present.
+  - `UNCHANGED`: Zero new or fixed violations, with identical score.
+- **Multi-page site crawl diffing**: Tracks canonical page URLs, identifying newly crawled pages (`NEW_PAGE`), missing/removed pages (`REMOVED_PAGE`), and computing aggregate site score deltas.
+- **Zero-regression CI gating**: CLI `--fail-on-regression` with `--baseline <path>` enables automated pull-request checks that block merging when regressions are introduced.
+
 ## Invariants
 
 - No circular workspace dependencies.

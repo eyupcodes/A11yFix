@@ -2,10 +2,19 @@
  * Terminal output formatters for CLI reports and error messages.
  */
 
-import type { AccessibilityReport, Finding } from '@a11yfix/core';
+import type {
+  AccessibilityReport,
+  DiffViolation,
+  Finding,
+  ReportDiff,
+} from '@a11yfix/core';
 
 export interface FormatSummaryOptions {
   readonly threshold?: number | undefined;
+}
+
+export interface FormatDiffSummaryOptions {
+  readonly failOnRegression?: boolean | undefined;
 }
 
 function formatFinding(finding: Finding, index: number): string {
@@ -163,6 +172,121 @@ export function formatCrawlTerminalSummary(
   }
 
   lines.push(sep);
+  return lines.join('\n');
+}
+
+function formatDiffViolation(v: DiffViolation, index: number): string {
+  const targetStr = v.target.length > 0 ? ` [${v.target.join(' ')}]` : '';
+  const pageStr = v.pageUrl ? ` (page: ${v.pageUrl})` : '';
+  const lines = [
+    `  ${index + 1}. [${v.severity.toUpperCase()}] ${v.ruleId}${targetStr}${pageStr}`,
+    `     ${v.description}`,
+  ];
+  if (v.failureSummary) {
+    lines.push(`     Issue: ${v.failureSummary}`);
+  }
+  if (v.html) {
+    const snippet = v.html.length > 80 ? `${v.html.slice(0, 80)}...` : v.html;
+    lines.push(`     Element: ${snippet}`);
+  }
+  if (v.helpUrl) {
+    lines.push(`     Docs: ${v.helpUrl}`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Formats a ReportDiff into a human-readable terminal regression summary string.
+ */
+export function formatDiffTerminalSummary(
+  diff: ReportDiff,
+  options?: FormatDiffSummaryOptions,
+): string {
+  const separator = '='.repeat(60);
+  const subSeparator = '-'.repeat(60);
+
+  const baselineScore =
+    diff.kind === 'single' ? diff.baselineScore : diff.baselineSiteScore;
+  const currentScore =
+    diff.kind === 'single' ? diff.currentScore : diff.currentSiteScore;
+  const deltaStr =
+    diff.scoreDelta > 0 ? `+${diff.scoreDelta}` : `${diff.scoreDelta}`;
+
+  const lines: string[] = [
+    separator,
+    'A11yFix Accessibility Regression Diff Report',
+    separator,
+    `Status:      ${diff.status}`,
+    `Score:       ${baselineScore} (${diff.baselineGrade}) → ${currentScore} (${diff.currentGrade}) [${deltaStr}]`,
+    subSeparator,
+    'Violation Changes:',
+    `  New Violations (Regressions): ${diff.counts.newCount}`,
+    `  Resolved Violations:          ${diff.counts.fixedCount}`,
+    `  Persistent Violations:        ${diff.counts.persistentCount}`,
+  ];
+
+  if (diff.kind === 'multi-page') {
+    lines.push(subSeparator);
+    lines.push(`Pages Audited: ${diff.pages.length}`);
+    for (const p of diff.pages) {
+      const pBase = p.baselineScore !== null ? `${p.baselineScore}` : '—';
+      const pCur = p.currentScore !== null ? `${p.currentScore}` : '—';
+      const pDelta =
+        p.scoreDelta !== null
+          ? p.scoreDelta > 0
+            ? `+${p.scoreDelta}`
+            : `${p.scoreDelta}`
+          : '—';
+      lines.push(
+        `  • ${p.url} [${p.status}] Score: ${pBase} → ${pCur} (${pDelta}) | New: ${p.newCount}, Fixed: ${p.fixedCount}`,
+      );
+    }
+  }
+
+  if (diff.newViolations.length > 0) {
+    lines.push(subSeparator);
+    lines.push(
+      `✖ Regressions / New Violations (${diff.newViolations.length}):`,
+    );
+    for (let i = 0; i < diff.newViolations.length; i++) {
+      const v = diff.newViolations[i];
+      if (v) {
+        lines.push(formatDiffViolation(v, i));
+      }
+    }
+  } else {
+    lines.push(subSeparator);
+    lines.push('✔ No new regressions detected.');
+  }
+
+  if (diff.fixedViolations.length > 0) {
+    lines.push(subSeparator);
+    lines.push(`✔ Resolved Violations (${diff.fixedViolations.length}):`);
+    for (let i = 0; i < diff.fixedViolations.length; i++) {
+      const v = diff.fixedViolations[i];
+      if (v) {
+        const targetStr = v.target.length > 0 ? ` [${v.target.join(' ')}]` : '';
+        lines.push(
+          `  ${i + 1}. [${v.severity.toUpperCase()}] ${v.ruleId}${targetStr}`,
+        );
+      }
+    }
+  }
+
+  if (options?.failOnRegression) {
+    lines.push(subSeparator);
+    if (diff.newViolations.length > 0) {
+      lines.push(
+        `✖ REGRESSION GATE FAILED: ${diff.newViolations.length} new accessibility violation(s) detected.`,
+      );
+    } else {
+      lines.push(
+        '✔ REGRESSION GATE PASSED: Zero new accessibility violations introduced.',
+      );
+    }
+  }
+
+  lines.push(separator);
   return lines.join('\n');
 }
 

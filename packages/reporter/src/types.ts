@@ -26,6 +26,12 @@ export interface HtmlReportOptions {
   readonly title?: string;
 }
 
+/** Options for Diff HTML report rendering. */
+export interface DiffHtmlReportOptions {
+  /** Optional custom document title for the HTML diff report. */
+  readonly title?: string;
+}
+
 /** Options for file export writing. */
 export interface WriteReportOptions {
   /** Explicit output format. If omitted, auto-detected from file extension. */

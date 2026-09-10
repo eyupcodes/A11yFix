@@ -2,11 +2,21 @@
  * Crawl action execution: scan and audit an entire website by crawling from a seed URL.
  */
 
-import { analyzeCrawlResults } from '@a11yfix/core';
-import { writeReport } from '@a11yfix/reporter';
+import { readFile } from 'node:fs/promises';
+
+import {
+  analyzeCrawlResults,
+  diffReports,
+  type ReportDiff,
+} from '@a11yfix/core';
+import { renderDiffJsonReport, writeReport } from '@a11yfix/reporter';
 import { crawlSite, ScannerError } from '@a11yfix/scanner';
 
-import { formatError, formatCrawlTerminalSummary } from './formatters.js';
+import {
+  formatCrawlTerminalSummary,
+  formatDiffTerminalSummary,
+  formatError,
+} from './formatters.js';
 import type { CliIo, ExitCode, CrawlCommandOptions } from './types.js';
 import { EXIT_CODES } from './types.js';
 
@@ -89,6 +99,13 @@ function validateCrawlOptions(
     }
   }
 
+  if (options.failOnRegression && !options.baseline) {
+    io.stderr(
+      'Error [INVALID_ARGS]: --fail-on-regression requires a baseline report (--baseline <path>).',
+    );
+    return EXIT_CODES.INVALID_ARGS;
+  }
+
   return null;
 }
 
@@ -134,6 +151,39 @@ export async function executeCrawl(
       startedAt: crawlResult.startedAt,
     });
 
+    let diff: ReportDiff | null = null;
+    if (options.baseline) {
+      let baselineContent: string;
+      try {
+        baselineContent = await readFile(options.baseline, 'utf-8');
+      } catch {
+        io.stderr(
+          `Error [INVALID_BASELINE]: Baseline file not found or inaccessible: "${options.baseline}".`,
+        );
+        return EXIT_CODES.INVALID_ARGS;
+      }
+
+      let baselineJson: unknown;
+      try {
+        baselineJson = JSON.parse(baselineContent);
+      } catch {
+        io.stderr(
+          `Error [INVALID_BASELINE]: Baseline file is not valid JSON: "${options.baseline}".`,
+        );
+        return EXIT_CODES.INVALID_ARGS;
+      }
+
+      try {
+        diff = diffReports(baselineJson as never, report);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        io.stderr(
+          `Error [INVALID_BASELINE]: Baseline report is invalid: ${msg}`,
+        );
+        return EXIT_CODES.INVALID_ARGS;
+      }
+    }
+
     if (options.output) {
       const writeOptions =
         options.format !== undefined ? { format: options.format } : undefined;
@@ -143,20 +193,36 @@ export async function executeCrawl(
     }
 
     if (options.json) {
-      const { renderMultiPageJsonReport } = await import('@a11yfix/reporter');
-      io.stdout(renderMultiPageJsonReport(report, { pretty: true }));
+      if (diff) {
+        io.stdout(renderDiffJsonReport(diff, { pretty: true }));
+      } else {
+        const { renderMultiPageJsonReport } = await import('@a11yfix/reporter');
+        io.stdout(renderMultiPageJsonReport(report, { pretty: true }));
+      }
     } else if (!options.quiet) {
-      const summaryOptions =
-        options.threshold !== undefined
-          ? { threshold: options.threshold }
-          : undefined;
-      io.stdout(formatCrawlTerminalSummary(report, summaryOptions));
+      if (diff) {
+        io.stdout(
+          formatDiffTerminalSummary(diff, {
+            failOnRegression: options.failOnRegression,
+          }),
+        );
+      } else {
+        const summaryOptions =
+          options.threshold !== undefined
+            ? { threshold: options.threshold }
+            : undefined;
+        io.stdout(formatCrawlTerminalSummary(report, summaryOptions));
+      }
     }
 
     if (
       options.threshold !== undefined &&
       report.summary.siteScore < options.threshold
     ) {
+      return EXIT_CODES.FAILURE;
+    }
+
+    if (options.failOnRegression && diff && diff.newViolations.length > 0) {
       return EXIT_CODES.FAILURE;
     }
 

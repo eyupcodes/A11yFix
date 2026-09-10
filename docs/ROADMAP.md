@@ -40,7 +40,10 @@ Crawl entire websites from a seed URL with BFS queue execution, same-origin link
 
 OASIS SARIF v2.1.0 report generation in `@a11yfix/reporter` for GitHub Code Scanning, GitLab Security, and Azure DevOps integration. Full rule descriptors with WCAG tags and severity mapping (`critical`/`serious` → `error`, `moderate` → `warning`, `minor` → `note`), element snippets, and CSS selector logical locations. Adds `--format sarif` to `a11yfix scan` and `a11yfix crawl` in `apps/cli`, `format: 'sarif'` in `apps/web` export API, and sample `.github/workflows/accessibility-scan.yml` CI workflow.
 
+## M11 Regression tracking — complete
+
+Pure multiset (bag) difference engine in `@a11yfix/core` comparing baseline vs. current audit snapshots with deterministic element-level fingerprinting (`${pageUrl}::${ruleId}::${target}::${html}`). Accurately tracks duplicate selectors, classifies diff status (`REGRESSED`, `IMPROVED`, `UNCHANGED`, `MIXED`), identifies new/fixed/persistent violations, computes score deltas, and compares multi-page crawl sites (new/removed pages and site-wide transition). Ships `renderDiffHtmlReport` and `renderDiffJsonReport` in `@a11yfix/reporter`, `-b, --baseline <path>` and `--fail-on-regression` CI gates with terminal diff formatting in `apps/cli`, and `POST /api/diff` in `apps/web`.
+
 ## Future
 
-- M11 Regression tracking
 - M12 AI-assisted remediation

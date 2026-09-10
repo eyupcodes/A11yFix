@@ -1,4 +1,9 @@
-import { analyzeAxeResults, analyzeCrawlResults } from '@a11yfix/core';
+import {
+  analyzeAxeResults,
+  analyzeCrawlResults,
+  diffReports,
+  isCoreError,
+} from '@a11yfix/core';
 import {
   renderHtmlReport,
   renderJsonReport,
@@ -12,6 +17,7 @@ import { crawlSite, scanAccessibility, ScannerError } from '@a11yfix/scanner';
 import type {
   ApiErrorResponse,
   CrawlApiRequest,
+  DiffApiRequest,
   ExportApiRequest,
   HealthApiResponse,
   ScanApiRequest,
@@ -277,6 +283,48 @@ export function handleExport(payload: unknown): {
         error: message,
         code: 'INTERNAL_ERROR',
       }),
+    };
+  }
+}
+
+export function handleDiff(payload: unknown): {
+  readonly status: number;
+  readonly body: unknown;
+} {
+  if (
+    typeof payload !== 'object' ||
+    payload === null ||
+    !('baseline' in payload) ||
+    !('current' in payload)
+  ) {
+    const error: ApiErrorResponse = {
+      error: 'Missing "baseline" or "current" field in diff request body.',
+      code: 'INVALID_REQUEST',
+    };
+    return { status: 400, body: error };
+  }
+
+  const { baseline, current } = payload as DiffApiRequest;
+
+  try {
+    const diff = diffReports(baseline, current);
+    return { status: 200, body: diff };
+  } catch (err: unknown) {
+    if (isCoreError(err)) {
+      return {
+        status: 400,
+        body: { error: err.message, code: err.code } satisfies ApiErrorResponse,
+      };
+    }
+
+    const message =
+      err instanceof Error ? err.message : 'Unknown diff calculation failure.';
+    return {
+      status: 500,
+      body: {
+        error: message,
+        code: 'INTERNAL_ERROR',
+      } satisfies ApiErrorResponse,
     };
   }
 }

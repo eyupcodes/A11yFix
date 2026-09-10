@@ -10,6 +10,13 @@
 export { analyzeAxeResults } from './normalize.js';
 export type { AnalyzeMeta } from './normalize.js';
 export { analyzeCrawlResults } from './multi-page.js';
+export {
+  compareMultiPageReports,
+  compareReports,
+  diffReports,
+  isAccessibilityReport,
+  isMultiPageReport,
+} from './diff.js';
 export { CORE_ERROR_CODES, CoreError, isCoreError } from './errors.js';
 export type { CoreErrorCode } from './errors.js';
 export { classifySeverity, severityWeight } from './severity.js';
@@ -35,4 +42,12 @@ export type {
   CommonViolation,
   CrawlInput,
   CrawlInputPage,
+  DiffCounts,
+  DiffStatus,
+  DiffViolation,
+  MultiPageReportDiff,
+  PageDiffItem,
+  ReportDiff,
+  RuleDiffSummary,
+  SingleReportDiff,
 } from './types.js';

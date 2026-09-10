@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+
 import type { MultiPageReport } from '@a11yfix/core';
 import { analyzeCrawlResults } from '@a11yfix/core';
 import { renderMultiPageJsonReport, writeReport } from '@a11yfix/reporter';
@@ -7,6 +9,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { executeCrawl } from './crawl.js';
 import type { CliIo } from './types.js';
 import { EXIT_CODES } from './types.js';
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return { ...actual, readFile: vi.fn() };
+});
 
 vi.mock('@a11yfix/scanner', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@a11yfix/scanner')>();
@@ -49,13 +56,67 @@ function makeReport(
       {
         url: 'https://example.com/',
         depth: 0,
-        report: { score: 90 } as never,
+        report: {
+          score: 90,
+          grade: 'A',
+          findings: [],
+          breakdown: {
+            totalPenalty: 10,
+            countsBySeverity: {
+              critical: 0,
+              serious: 0,
+              moderate: 0,
+              minor: 0,
+            },
+            scoredFindings: 0,
+            bestPracticeFindings: 0,
+          },
+          ruleCounts: {
+            violations: 0,
+            passes: 10,
+            incomplete: 0,
+            inapplicable: 0,
+          },
+          meta: {
+            requestedUrl: 'https://example.com/',
+            finalUrl: 'https://example.com/',
+            title: '',
+            scannedAt: '',
+          },
+        } as never,
         error: null,
       },
       {
         url: 'https://example.com/about',
         depth: 1,
-        report: { score: 86 } as never,
+        report: {
+          score: 86,
+          grade: 'B',
+          findings: [],
+          breakdown: {
+            totalPenalty: 14,
+            countsBySeverity: {
+              critical: 0,
+              serious: 0,
+              moderate: 0,
+              minor: 0,
+            },
+            scoredFindings: 0,
+            bestPracticeFindings: 0,
+          },
+          ruleCounts: {
+            violations: 0,
+            passes: 8,
+            incomplete: 0,
+            inapplicable: 0,
+          },
+          meta: {
+            requestedUrl: 'https://example.com/about',
+            finalUrl: 'https://example.com/about',
+            title: '',
+            scannedAt: '',
+          },
+        } as never,
         error: null,
       },
     ],
@@ -246,5 +307,56 @@ describe('executeCrawl', () => {
     const code = await executeCrawl('https://example.com', {}, testIo);
     expect(code).toBe(EXIT_CODES.FAILURE);
     expect(stderrLogs.join('\n')).toContain('NAVIGATION_FAILED');
+  });
+
+  describe('crawl baseline regression tracking', () => {
+    it('returns INVALID_ARGS when --fail-on-regression is used without --baseline', async () => {
+      const code = await executeCrawl(
+        'https://example.com',
+        { failOnRegression: true },
+        testIo,
+      );
+      expect(code).toBe(EXIT_CODES.INVALID_ARGS);
+      expect(stderrLogs.join('\n')).toContain(
+        '--fail-on-regression requires a baseline report',
+      );
+    });
+
+    it('returns INVALID_ARGS when baseline file fails to read', async () => {
+      vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'));
+      const code = await executeCrawl(
+        'https://example.com',
+        { baseline: 'missing.json' },
+        testIo,
+      );
+      expect(code).toBe(EXIT_CODES.INVALID_ARGS);
+      expect(stderrLogs.join('\n')).toContain('INVALID_BASELINE');
+    });
+
+    it('outputs multi-page diff and succeeds when crawl matches baseline', async () => {
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(mockReport));
+      const code = await executeCrawl(
+        'https://example.com',
+        { baseline: 'baseline.json' },
+        testIo,
+      );
+      expect(code).toBe(EXIT_CODES.SUCCESS);
+      expect(stdoutLogs.join('\n')).toContain(
+        'A11yFix Accessibility Regression Diff Report',
+      );
+      expect(stdoutLogs.join('\n')).toContain('Pages Audited:');
+    });
+
+    it('outputs diff json when --json is passed with baseline', async () => {
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(mockReport));
+      const code = await executeCrawl(
+        'https://example.com',
+        { baseline: 'baseline.json', json: true },
+        testIo,
+      );
+      expect(code).toBe(EXIT_CODES.SUCCESS);
+      const parsed = JSON.parse(stdoutLogs[0]!) as { readonly kind: string };
+      expect(parsed.kind).toBe('multi-page');
+    });
   });
 });

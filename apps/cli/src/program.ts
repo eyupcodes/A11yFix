@@ -94,6 +94,14 @@ export function createProgram(config: CreateProgramOptions = {}): Command {
       'navigation and scan timeout in milliseconds',
       parseTimeout,
     )
+    .option(
+      '-b, --baseline <path>',
+      'path to prior baseline report JSON for regression diffing',
+    )
+    .option(
+      '--fail-on-regression',
+      'fail with exit code 1 if any new violations are detected',
+    )
     .option('--json', 'output raw report as JSON to stdout')
     .option('-q, --quiet', 'suppress decorative terminal output')
     .action(
@@ -106,6 +114,8 @@ export function createProgram(config: CreateProgramOptions = {}): Command {
           timeout?: number;
           json?: boolean;
           quiet?: boolean;
+          baseline?: string;
+          failOnRegression?: boolean;
         },
       ) => {
         const scanOptions: ScanCommandOptions = {
@@ -120,6 +130,12 @@ export function createProgram(config: CreateProgramOptions = {}): Command {
             : {}),
           ...(cmdOptions.timeout !== undefined
             ? { timeout: cmdOptions.timeout }
+            : {}),
+          ...(cmdOptions.baseline !== undefined
+            ? { baseline: cmdOptions.baseline }
+            : {}),
+          ...(cmdOptions.failOnRegression !== undefined
+            ? { failOnRegression: cmdOptions.failOnRegression }
             : {}),
           ...(cmdOptions.json !== undefined ? { json: cmdOptions.json } : {}),
           ...(cmdOptions.quiet !== undefined
@@ -164,6 +180,14 @@ export function createProgram(config: CreateProgramOptions = {}): Command {
       'per-page navigation timeout in milliseconds',
       parseTimeout,
     )
+    .option(
+      '-b, --baseline <path>',
+      'path to prior baseline report JSON for regression diffing',
+    )
+    .option(
+      '--fail-on-regression',
+      'fail with exit code 1 if any new violations are detected',
+    )
     .option('--json', 'output raw report as JSON to stdout')
     .option('-q, --quiet', 'suppress live crawl progress')
     .action(
@@ -178,6 +202,8 @@ export function createProgram(config: CreateProgramOptions = {}): Command {
           timeout?: number;
           json?: boolean;
           quiet?: boolean;
+          baseline?: string;
+          failOnRegression?: boolean;
         },
       ) => {
         const crawlOptions: CrawlCommandOptions = {
@@ -198,6 +224,12 @@ export function createProgram(config: CreateProgramOptions = {}): Command {
             : {}),
           ...(cmdOptions.timeout !== undefined
             ? { timeout: cmdOptions.timeout }
+            : {}),
+          ...(cmdOptions.baseline !== undefined
+            ? { baseline: cmdOptions.baseline }
+            : {}),
+          ...(cmdOptions.failOnRegression !== undefined
+            ? { failOnRegression: cmdOptions.failOnRegression }
             : {}),
           ...(cmdOptions.json !== undefined ? { json: cmdOptions.json } : {}),
           ...(cmdOptions.quiet !== undefined
