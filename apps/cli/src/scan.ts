@@ -55,9 +55,13 @@ function validateOptions(
   }
 
   if (options.format !== undefined) {
-    if (options.format !== 'json' && options.format !== 'html') {
+    if (
+      options.format !== 'json' &&
+      options.format !== 'html' &&
+      options.format !== 'sarif'
+    ) {
       io.stderr(
-        `Error [INVALID_FORMAT]: Format must be "json" or "html", received "${String(options.format)}".`,
+        `Error [INVALID_FORMAT]: Format must be "json", "html", or "sarif", received "${String(options.format)}".`,
       );
       return EXIT_CODES.INVALID_ARGS;
     }

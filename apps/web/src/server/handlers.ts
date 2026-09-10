@@ -4,6 +4,7 @@ import {
   renderJsonReport,
   renderMultiPageHtmlReport,
   renderMultiPageJsonReport,
+  renderSarifReport,
   ReporterError,
 } from '@a11yfix/reporter';
 import { crawlSite, scanAccessibility, ScannerError } from '@a11yfix/scanner';
@@ -208,18 +209,27 @@ export function handleExport(payload: unknown): {
 
   const { report, format } = payload as ExportApiRequest;
 
-  if (format !== 'html' && format !== 'json') {
+  if (format !== 'html' && format !== 'json' && format !== 'sarif') {
     return {
       status: 400,
       contentType: 'application/json',
       body: JSON.stringify({
-        error: `Unsupported export format "${String(format)}". Must be "html" or "json".`,
+        error: `Unsupported export format "${String(format)}". Must be "html", "json", or "sarif".`,
         code: 'UNSUPPORTED_FORMAT',
       }),
     };
   }
 
   try {
+    if (format === 'sarif') {
+      const sarif = renderSarifReport(report, { pretty: true });
+      return {
+        status: 200,
+        contentType: 'application/sarif+json; charset=utf-8',
+        body: sarif,
+      };
+    }
+
     const isMultiPage =
       typeof report === 'object' &&
       report !== null &&

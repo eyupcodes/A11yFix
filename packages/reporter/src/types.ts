@@ -6,11 +6,17 @@
  */
 
 /** Supported export report formats. */
-export type ReportFormat = 'json' | 'html';
+export type ReportFormat = 'json' | 'html' | 'sarif';
 
 /** Options for JSON report serialization. */
 export interface JsonReportOptions {
   /** When true, formats the JSON with 2-space indentation. Defaults to false. */
+  readonly pretty?: boolean;
+}
+
+/** Options for SARIF report serialization. */
+export interface SarifReportOptions {
+  /** When true, formats the SARIF JSON with 2-space indentation. Defaults to false. */
   readonly pretty?: boolean;
 }
 

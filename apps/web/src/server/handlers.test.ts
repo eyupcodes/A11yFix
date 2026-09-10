@@ -3,6 +3,7 @@ import { analyzeAxeResults } from '@a11yfix/core';
 import {
   renderHtmlReport,
   renderJsonReport,
+  renderSarifReport,
   ReporterError,
 } from '@a11yfix/reporter';
 import { scanAccessibility, ScannerError } from '@a11yfix/scanner';
@@ -28,6 +29,7 @@ vi.mock('@a11yfix/core', () => ({
 vi.mock('@a11yfix/reporter', () => ({
   renderHtmlReport: vi.fn(),
   renderJsonReport: vi.fn(),
+  renderSarifReport: vi.fn(),
   ReporterError: class ReporterError extends Error {
     readonly code: string;
     constructor(code: string, message: string) {
@@ -163,6 +165,15 @@ describe('API Handlers', () => {
       expect(res.status).toBe(200);
       expect(res.contentType).toBe('application/json; charset=utf-8');
       expect(res.body).toBe('{"score":95}');
+    });
+
+    it('exports SARIF report with application/sarif+json content type', () => {
+      vi.mocked(renderSarifReport).mockReturnValue('{"version":"2.1.0"}');
+
+      const res = handleExport({ report: mockReport, format: 'sarif' });
+      expect(res.status).toBe(200);
+      expect(res.contentType).toBe('application/sarif+json; charset=utf-8');
+      expect(res.body).toBe('{"version":"2.1.0"}');
     });
 
     it('surfaces ReporterError as 400', () => {

@@ -20,10 +20,14 @@ function resolveFormat(
   explicitFormat?: ReportFormat,
 ): ReportFormat {
   if (explicitFormat) {
-    if (explicitFormat !== 'json' && explicitFormat !== 'html') {
+    if (
+      explicitFormat !== 'json' &&
+      explicitFormat !== 'html' &&
+      explicitFormat !== 'sarif'
+    ) {
       throw new ReporterError(
         'UNSUPPORTED_FORMAT',
-        `Unsupported report format: "${String(explicitFormat)}". Expected "json" or "html".`,
+        `Unsupported report format: "${String(explicitFormat)}". Expected "json", "html", or "sarif".`,
       );
     }
     return explicitFormat;
@@ -36,10 +40,13 @@ function resolveFormat(
   if (ext === '.html' || ext === '.htm') {
     return 'html';
   }
+  if (ext === '.sarif') {
+    return 'sarif';
+  }
 
   throw new ReporterError(
     'UNSUPPORTED_FORMAT',
-    `Cannot infer report format from file extension "${ext}". Use .json or .html extension, or specify format explicitly.`,
+    `Cannot infer report format from file extension "${ext}". Use .json, .html, or .sarif extension, or specify format explicitly.`,
   );
 }
 
@@ -77,19 +84,27 @@ export async function writeReport(
     'pages' in report &&
     'commonViolations' in report;
 
-  const content = isMultiPage
-    ? format === 'json'
-      ? (await import('./multi-page-json.js')).renderMultiPageJsonReport(
-          report,
-          jsonOptions,
-        )
-      : (await import('./multi-page-html.js')).renderMultiPageHtmlReport(
-          report,
-          htmlOptions,
-        )
-    : format === 'json'
-      ? renderJsonReport(report, jsonOptions)
-      : renderHtmlReport(report, htmlOptions);
+  let content: string;
+  if (format === 'sarif') {
+    const { renderSarifReport } = await import('./sarif.js');
+    content = renderSarifReport(report, jsonOptions);
+  } else if (isMultiPage) {
+    content =
+      format === 'json'
+        ? (await import('./multi-page-json.js')).renderMultiPageJsonReport(
+            report,
+            jsonOptions,
+          )
+        : (await import('./multi-page-html.js')).renderMultiPageHtmlReport(
+            report,
+            htmlOptions,
+          );
+  } else {
+    content =
+      format === 'json'
+        ? renderJsonReport(report, jsonOptions)
+        : renderHtmlReport(report, htmlOptions);
+  }
 
   try {
     const parentDir = dirname(outputPath);

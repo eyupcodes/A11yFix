@@ -152,6 +152,20 @@ describe('executeCrawl', () => {
     );
   });
 
+  it('writes SARIF report to disk when format is sarif', async () => {
+    const code = await executeCrawl(
+      'https://example.com',
+      { output: 'reports/site.sarif', format: 'sarif' },
+      testIo,
+    );
+    expect(code).toBe(EXIT_CODES.SUCCESS);
+    expect(writeReport).toHaveBeenCalledWith(
+      mockReport as never,
+      'reports/site.sarif',
+      { format: 'sarif' },
+    );
+  });
+
   it('returns SUCCESS when site score meets threshold', async () => {
     const code = await executeCrawl(
       'https://example.com',

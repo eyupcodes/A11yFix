@@ -36,8 +36,11 @@ Deliver interactive web dashboard in `apps/web` with Vite + React 19 frontend an
 
 Crawl entire websites from a seed URL with BFS queue execution, same-origin link discovery and cycle avoidance, cross-page aggregation (site score/grade, per-page breakdown, recurring site-wide violations), and multi-page JSON+HTML reporting. Ships `a11yfix crawl <url>` with live terminal progress and threshold gates, plus `POST /api/crawl` in `apps/web`.
 
+## M10 CI/SARIF — complete
+
+OASIS SARIF v2.1.0 report generation in `@a11yfix/reporter` for GitHub Code Scanning, GitLab Security, and Azure DevOps integration. Full rule descriptors with WCAG tags and severity mapping (`critical`/`serious` → `error`, `moderate` → `warning`, `minor` → `note`), element snippets, and CSS selector logical locations. Adds `--format sarif` to `a11yfix scan` and `a11yfix crawl` in `apps/cli`, `format: 'sarif'` in `apps/web` export API, and sample `.github/workflows/accessibility-scan.yml` CI workflow.
+
 ## Future
 
-- M10 CI/SARIF
 - M11 Regression tracking
 - M12 AI-assisted remediation

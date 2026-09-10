@@ -219,6 +219,40 @@ Design notes:
 - **CLI**: `a11yfix crawl <url>` (`-m/--max-pages`, `-d/--max-depth`, `-o/--output`, `-f/--format`, `-t/--threshold`, `--timeout`, `--json`, `-q/--quiet`) with live `[n] Audited/Skipped url` progress.
 - **Web API**: `POST /api/crawl` (`url`, `maxPages`, `maxDepth`, `timeout`) → `MultiPageReport`; `POST /api/export` now handles both single and multi-page reports.
 
+## CI / SARIF Integration (M10)
+
+`renderSarifReport(report, options?)` and `buildSarifLog(report)` transform single-page `AccessibilityReport` and `MultiPageReport` into standard OASIS SARIF v2.1.0 format for GitHub Code Scanning, GitLab Security, and Azure DevOps.
+
+```text
+AccessibilityReport / MultiPageReport
+       │
+       ▼
+  buildSarifLog
+   ├→ Driver Rules (deduplicated by ruleId)
+   │    ├─ id, name, shortDescription, fullDescription
+   │    ├─ helpUri (Deque University docs)
+   │    ├─ help: plain text summary + markdown remediation guidance
+   │    ├─ defaultConfiguration: level ('error' | 'warning' | 'note')
+   │    └─ properties: tags (wcag2a, wcag111, accessibility), problem.severity
+   │
+   └→ Results (per finding node)
+        ├─ ruleId, ruleIndex, level
+        ├─ message: failureSummary ?? help ?? description
+        └─ locations
+             ├─ physicalLocation.artifactLocation.uri: page URL
+             ├─ physicalLocation.region.snippet.text: element outer HTML
+             └─ logicalLocations: target CSS selector path
+```
+
+Design notes:
+
+- **OASIS SARIF v2.1.0 schema**: strict compliance with `sarif-schema-2.1.0.json`.
+- **Severity mapping**: `critical` & `serious` → `error`, `moderate` → `warning`, `minor` → `note`.
+- **Multi-page support**: walks all crawl pages (`page.url`), collects findings, maps locations to respective page URIs, and deduplicates rules across the entire site.
+- **Export & CLI**: `writeReport` auto-detects `.sarif` file extension; CLI commands `a11yfix scan` and `a11yfix crawl` support `-f, --format sarif`.
+- **Web API**: `POST /api/export` supports `format: 'sarif'` returning `application/sarif+json; charset=utf-8`.
+- **CI action**: sample `.github/workflows/accessibility-scan.yml` runs scan, exports SARIF, and uploads via `github/codeql-action/upload-sarif@v3`.
+
 ## Invariants
 
 - No circular workspace dependencies.

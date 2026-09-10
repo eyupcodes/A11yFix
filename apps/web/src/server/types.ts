@@ -15,7 +15,7 @@ export interface CrawlApiRequest {
 export interface ExportApiRequest {
   readonly report:
     AccessibilityReport | import('@a11yfix/core').MultiPageReport;
-  readonly format: 'html' | 'json';
+  readonly format: 'html' | 'json' | 'sarif';
 }
 
 export interface HealthApiResponse {

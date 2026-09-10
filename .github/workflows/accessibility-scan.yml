@@ -1,0 +1,63 @@
+name: Accessibility Scan (SARIF)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Target URL to audit'
+        required: true
+        default: 'https://example.com'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  accessibility-scan:
+    name: Run A11yFix & Upload SARIF
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium for Playwright
+        run: pnpm --filter @a11yfix/scanner exec playwright install --with-deps chromium
+
+      - name: Build monorepo
+        run: pnpm build
+
+      - name: Run Accessibility Scan (SARIF)
+        run: |
+          TARGET_URL="${{ github.event.inputs.target_url || 'https://example.com' }}"
+          node apps/cli/dist/index.js scan "$TARGET_URL" --format sarif --output a11yfix-results.sarif || true
+
+      - name: Upload SARIF report to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
+        with:
+          sarif_file: a11yfix-results.sarif
+          category: a11yfix
+
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11yfix-results-sarif
+          path: a11yfix-results.sarif
+          retention-days: 14

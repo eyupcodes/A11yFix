@@ -5,6 +5,7 @@ import type { AccessibilityReport } from '@a11yfix/core';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { writeReport } from './export.js';
+import type { SarifLog } from './sarif.js';
 
 const MOCK_REPORT: AccessibilityReport = {
   findings: [],
@@ -62,6 +63,16 @@ describe('writeReport', () => {
     expect(content).toContain('<!DOCTYPE html>');
   });
 
+  it('auto-detects sarif extension and writes file', async () => {
+    const filePath = join(TEST_DIR, 'report.sarif');
+    await writeReport(MOCK_REPORT, filePath);
+
+    const content = await readFile(filePath, 'utf8');
+    const parsed = JSON.parse(content) as SarifLog;
+    expect(parsed.version).toBe('2.1.0');
+    expect(parsed.runs[0]!.tool.driver.name).toBe('A11yFix');
+  });
+
   it('allows format option to override file extension', async () => {
     const filePath = join(TEST_DIR, 'output.custom');
     await writeReport(MOCK_REPORT, filePath, { format: 'json', pretty: true });
@@ -69,6 +80,15 @@ describe('writeReport', () => {
     const content = await readFile(filePath, 'utf8');
     expect(content).toContain('\n  "score": 100');
     expect(JSON.parse(content)).toEqual(MOCK_REPORT);
+  });
+
+  it('allows sarif format option to override file extension', async () => {
+    const filePath = join(TEST_DIR, 'output.custom');
+    await writeReport(MOCK_REPORT, filePath, { format: 'sarif' });
+
+    const content = await readFile(filePath, 'utf8');
+    const parsed = JSON.parse(content) as SarifLog;
+    expect(parsed.version).toBe('2.1.0');
   });
 
   it('rejects unsupported extensions when format is omitted', async () => {

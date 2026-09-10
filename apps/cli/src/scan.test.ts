@@ -147,6 +147,21 @@ describe('executeScan', () => {
     );
   });
 
+  it('writes SARIF report to disk when format is sarif', async () => {
+    const exitCode = await executeScan(
+      'https://example.com',
+      { output: 'reports/results.sarif', format: 'sarif' },
+      testIo,
+    );
+
+    expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+    expect(writeReport).toHaveBeenCalledWith(
+      MOCK_REPORT,
+      'reports/results.sarif',
+      { format: 'sarif' },
+    );
+  });
+
   it('returns SUCCESS when score meets threshold', async () => {
     const exitCode = await executeScan(
       'https://example.com',

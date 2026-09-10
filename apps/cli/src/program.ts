@@ -79,8 +79,11 @@ export function createProgram(config: CreateProgramOptions = {}): Command {
   program
     .command('scan <url>')
     .description('Scan a URL for accessibility violations.')
-    .option('-o, --output <path>', 'file path to save report (json or html)')
-    .option('-f, --format <format>', 'report format (json or html)')
+    .option(
+      '-o, --output <path>',
+      'file path to save report (json, html, or sarif)',
+    )
+    .option('-f, --format <format>', 'report format (json, html, or sarif)')
     .option(
       '-t, --threshold <score>',
       'fail with exit code 1 if score is below threshold (0-100)',
@@ -146,8 +149,11 @@ export function createProgram(config: CreateProgramOptions = {}): Command {
       'maximum crawl depth (default: 2)',
       parseMaxDepth,
     )
-    .option('-o, --output <path>', 'file path to save report (json or html)')
-    .option('-f, --format <format>', 'report format (json or html)')
+    .option(
+      '-o, --output <path>',
+      'file path to save report (json, html, or sarif)',
+    )
+    .option('-f, --format <format>', 'report format (json, html, or sarif)')
     .option(
       '-t, --threshold <score>',
       'fail with exit code 1 if site score is below threshold (0-100)',

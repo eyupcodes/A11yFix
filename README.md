@@ -28,9 +28,11 @@ a11yfix crawl https://example.com --max-pages 20 --max-depth 2
 a11yfix crawl https://example.com --output site-report.html --format html
 a11yfix crawl https://example.com --threshold 80  # exit 1 if site score < 80
 
-# Export report to HTML or JSON (scan)
+# Export report to HTML, JSON, or SARIF
 a11yfix scan https://example.com --output report.html
 a11yfix scan https://example.com --output report.json --format json
+a11yfix scan https://example.com --output results.sarif --format sarif
+a11yfix crawl https://example.com --output site.sarif --format sarif
 
 # CI threshold gate (fails with exit code 1 if score < 80)
 a11yfix scan https://example.com --threshold 80
@@ -59,14 +61,14 @@ Open `http://localhost:5173` (dev) or `http://localhost:3001` (prod) to run audi
 
 ## Status
 
-v0.1.0 — Ready. Milestones M1 through M8 complete.
+v0.1.0 — Ready. Milestones M1 through M10 complete.
 
 The repository contains the monorepo foundation, the low-level scanning engine, the core analysis layer, the report generation layer, the developer-facing CLI, the interactive web dashboard, runnable examples, and comprehensive test suites:
 
-- `@a11yfix/scanner` validates target URLs, drives headless Chromium through Playwright, injects axe-core, and produces raw scan results.
-- `@a11yfix/core` normalizes findings, maps WCAG criteria, classifies severity, and scores reports through `analyzeAxeResults`.
-- `@a11yfix/reporter` serializes JSON reports, renders standalone, responsive, accessible HTML reports, and provides file export utilities through `renderJsonReport`, `renderHtmlReport`, and `writeReport`.
-- `@a11yfix/cli` provides the `a11yfix scan <url>` command with formatters, threshold gates, export options, and predictable exit codes (0, 1, 2).
+- `@a11yfix/scanner` validates target URLs, drives headless Chromium through Playwright, injects axe-core, crawls full websites via BFS, and produces raw scan results.
+- `@a11yfix/core` normalizes findings, maps WCAG criteria, classifies severity, aggregates multi-page crawl results, and scores reports through `analyzeAxeResults`.
+- `@a11yfix/reporter` serializes JSON reports, renders standalone, responsive, accessible HTML reports, generates OASIS SARIF v2.1.0 reports for GitHub Code Scanning, and provides file export utilities through `renderJsonReport`, `renderHtmlReport`, `renderSarifReport`, and `writeReport`.
+- `@a11yfix/cli` provides `a11yfix scan <url>` and `a11yfix crawl <url>` commands with formatters, threshold gates, export options (html, json, sarif), and predictable exit codes (0, 1, 2).
 - `@a11yfix/web` provides an interactive, accessible React dashboard and local Node.js API server for visual web scanning, real-time filtering, and report downloads.
 - Comprehensive test suites verify scanner edge cases and redirects, core scoring boundaries and schema resilience, reporter XSS security and rendering benchmarks, CLI Commander integration with real file export, web dashboard server and component rendering, and end-to-end monorepo pipeline integration with automated self-auditing of generated HTML reports (asserting 0 accessibility violations).
 - Runnable programmatic examples and documentation live in `examples/`.
