@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-10-17
 
 ### Added
+
 - `@a11yfix/scanner`: Playwright and axe-core scanning engine.
 - `@a11yfix/core`: finding normalisation, WCAG mapping and severity scoring.
 - `@a11yfix/core`: regression tracking, diff reporting and CI gating.
@@ -21,7 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Runnable examples, plus architecture and roadmap docs.
 
 ### Fixed
+
 - `lint` and `typecheck` build workspace dependencies first, so they pass on a clean checkout (#3).
 
 ### Changed
+
 - GitHub Actions upgraded to the Node 24 majors (#1).
