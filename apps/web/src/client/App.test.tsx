@@ -1,6 +1,6 @@
 import type { AccessibilityReport, Finding } from '@a11yfix/core';
-import { renderToString } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { renderToStaticMarkup, renderToString } from 'react-dom/server';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App.js';
 import { FilterBar } from './components/FilterBar.js';
@@ -98,6 +98,10 @@ describe('Web Client Components', () => {
   });
 
   describe('ScoreOverview', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
     it('renders score, grade, and severity breakdown', () => {
       const html = renderToString(<ScoreOverview report={mockReport} />);
       expect(html).toContain('82');
@@ -107,6 +111,100 @@ describe('Web Client Components', () => {
       expect(html).toContain('Critical');
       expect(html).toContain('Serious');
       expect(html).toContain('https://example.com');
+    });
+
+    it.each([
+      [0, '#dc2626'],
+      [49, '#dc2626'],
+      [50, '#ea580c'],
+      [74, '#ea580c'],
+      [75, '#ca8a04'],
+      [89, '#ca8a04'],
+      [90, '#16a34a'],
+      [100, '#16a34a'],
+    ])(
+      'uses %s score color %s for both the score and grade',
+      (score, color) => {
+        const html = renderToString(
+          <ScoreOverview report={{ ...mockReport, score }} />,
+        );
+        expect(html).toContain(`class="score-number" style="color:${color}"`);
+        expect(html).toContain(`class="score-grade" style="color:${color}"`);
+      },
+    );
+
+    it('keeps each severity count associated with its label', () => {
+      const countsBySeverity = {
+        critical: 2,
+        serious: 3,
+        moderate: 5,
+        minor: 7,
+      };
+      const html = renderToString(
+        <ScoreOverview
+          report={{
+            ...mockReport,
+            breakdown: { ...mockReport.breakdown, countsBySeverity },
+          }}
+        />,
+      );
+
+      for (const [severity, count] of Object.entries(countsBySeverity)) {
+        const label = severity.charAt(0).toUpperCase() + severity.slice(1);
+        expect(html).toContain(
+          `<div class="metric-card ${severity}"><div class="metric-num">${count}</div><div class="metric-label">${label}</div>`,
+        );
+      }
+    });
+
+    it('renders zero counts and fallback metadata for a direct scan', () => {
+      const html = renderToStaticMarkup(
+        <ScoreOverview
+          report={{
+            ...mockReport,
+            score: 100,
+            grade: 'A',
+            findings: [],
+            breakdown: {
+              totalPenalty: 0,
+              countsBySeverity: {
+                critical: 0,
+                serious: 0,
+                moderate: 0,
+                minor: 0,
+              },
+              scoredFindings: 0,
+              bestPracticeFindings: 0,
+            },
+            ruleCounts: {
+              violations: 0,
+              passes: 0,
+              incomplete: 0,
+              inapplicable: 0,
+            },
+            meta: {},
+          }}
+        />,
+      );
+
+      expect(html).toContain('0 violations · 0 passed');
+      expect(html.match(/class="metric-num">0<\/div>/g)).toHaveLength(4);
+      expect(html).toContain('Target: <strong>Direct Scan</strong>');
+      expect(html).not.toContain('Scanned At:');
+    });
+
+    it('formats the scan timestamp without assuming the local timezone', () => {
+      const formatTime = vi
+        .spyOn(Date.prototype, 'toLocaleTimeString')
+        .mockReturnValue('12:34:56');
+      const html = renderToStaticMarkup(<ScoreOverview report={mockReport} />);
+
+      expect(html).toContain('Target: <strong>https://example.com</strong>');
+      expect(html).toContain('Scanned At: <strong>12:34:56</strong>');
+      expect(formatTime).toHaveBeenCalledOnce();
+      expect(formatTime.mock.instances[0]?.toISOString()).toBe(
+        mockReport.meta.scannedAt,
+      );
     });
   });
 
