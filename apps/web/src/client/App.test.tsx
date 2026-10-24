@@ -182,7 +182,7 @@ describe('Web Client Components', () => {
               incomplete: 0,
               inapplicable: 0,
             },
-            meta: {},
+            meta: {} as AccessibilityReport['meta'],
           }}
         />,
       );
@@ -202,9 +202,9 @@ describe('Web Client Components', () => {
       expect(html).toContain('Target: <strong>https://example.com</strong>');
       expect(html).toContain('Scanned At: <strong>12:34:56</strong>');
       expect(formatTime).toHaveBeenCalledOnce();
-      expect(formatTime.mock.instances[0]?.toISOString()).toBe(
-        mockReport.meta.scannedAt,
-      );
+      expect(
+        (formatTime.mock.instances[0] as Date | undefined)?.toISOString(),
+      ).toBe(mockReport.meta.scannedAt);
     });
   });
 
