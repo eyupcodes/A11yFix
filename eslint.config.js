@@ -4,7 +4,13 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/coverage/**', 'node_modules/**'],
+    ignores: [
+      '**/dist/**',
+      '**/coverage/**',
+      'node_modules/**',
+      // Temporary files tsup writes (and deletes) during a build.
+      '**/tsup.config.bundled_*.mjs',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
