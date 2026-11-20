@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The `target-blank` heuristic fix merges `noopener noreferrer` into an existing `rel` without duplicating or reordering tokens and ignores `data-rel` / `data-target`; the `aria-hidden-focus` fallback emits `tabIndex={-1}` for React instead of an invalid `tabindex` attribute (#9).
+
 ### Added
 
 - Regression coverage for dashboard score color thresholds, severity counts, and direct-scan metadata fallbacks.
