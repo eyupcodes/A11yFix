@@ -275,16 +275,25 @@ function fixTargetBlank(
   framework: RemediationFramework,
 ): FixDraft {
   let fixedCode = html;
-  if (/target=["']_blank["']/i.test(html)) {
-    if (/rel=/i.test(html)) {
+  // Require leading whitespace so `data-target` / `data-rel` are not matched.
+  if (/\starget=["']_blank["']/i.test(html)) {
+    const relAttribute = /(\srel=)(["'])([^"']*)\2/i;
+    const existing = relAttribute.exec(html);
+    if (existing) {
+      const tokens = existing[3]!.split(/\s+/).filter(Boolean);
+      const lower = tokens.map((token) => token.toLowerCase());
+      for (const required of ['noopener', 'noreferrer']) {
+        if (!lower.includes(required)) tokens.push(required);
+      }
       fixedCode = html.replace(
-        /rel=["']([^"']*)["']/i,
-        'rel="noopener noreferrer $1"',
+        relAttribute,
+        (_match, prefix: string, quote: string) =>
+          `${prefix}${quote}${tokens.join(' ')}${quote}`,
       );
     } else {
       fixedCode = html.replace(
-        /target=["']_blank["']/i,
-        'target="_blank" rel="noopener noreferrer"',
+        /(\starget=["']_blank["'])/i,
+        '$1 rel="noopener noreferrer"',
       );
     }
   }
@@ -304,7 +313,8 @@ function fixAriaHiddenFocus(
 ): FixDraft {
   let fixedCode = html.replace(/\s*aria-hidden=["']true["']/gi, '');
   if (fixedCode === html) {
-    fixedCode = html.replace(/<([a-zA-Z0-9]+)\b/i, '<$1 tabindex="-1"');
+    const tabIndex = framework === 'react' ? 'tabIndex={-1}' : 'tabindex="-1"';
+    fixedCode = html.replace(/<([a-zA-Z0-9]+)\b/i, `<$1 ${tabIndex}`);
   }
 
   return {
