@@ -198,6 +198,50 @@ describe('remediation-heuristics', () => {
     expect(patch.fixedCode).toContain('rel="noopener noreferrer"');
   });
 
+  it.each([
+    ['rel="noopener"', 'rel="noopener noreferrer"'],
+    ['rel="noreferrer noopener"', 'rel="noreferrer noopener"'],
+    ['rel="NOOPENER"', 'rel="NOOPENER noreferrer"'],
+    ['rel="nofollow"', 'rel="nofollow noopener noreferrer"'],
+    ['rel=""', 'rel="noopener noreferrer"'],
+    ["rel='author'", "rel='author noopener noreferrer'"],
+  ])('target-blank merges an existing %s', (existing, expected) => {
+    const finding = makeFinding(
+      'target-blank',
+      `<a href="https://example.com" target="_blank" ${existing}>External</a>`,
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain(expected);
+    expect(patch.fixedCode.match(/\brel=/g)).toHaveLength(1);
+  });
+
+  it('target-blank ignores data-rel and data-target attributes', () => {
+    const finding = makeFinding(
+      'target-blank',
+      '<a href="https://example.com" data-rel="x" data-target="_blank">External</a>',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toBe(finding.nodes[0]!.html);
+  });
+
+  it('aria-hidden-focus adds tabIndex={-1} for React when nothing can be removed', () => {
+    const finding = makeFinding(
+      'aria-hidden-focus',
+      '<button>Focusable</button>',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!, 'react');
+    expect(patch.fixedCode).toBe('<button tabIndex={-1}>Focusable</button>');
+  });
+
+  it('aria-hidden-focus adds tabindex="-1" for plain HTML when nothing can be removed', () => {
+    const finding = makeFinding(
+      'aria-hidden-focus',
+      '<button>Focusable</button>',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toBe('<button tabindex="-1">Focusable</button>');
+  });
+
   it('fixes aria-hidden-focus by removing aria-hidden attribute', () => {
     const finding = makeFinding(
       'aria-hidden-focus',
