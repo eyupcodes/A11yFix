@@ -299,6 +299,43 @@ describe('remediation-heuristics', () => {
     expect(patch.fixedCode).toContain('id="header-unique"');
   });
 
+  it('suffixes the real id rather than a look-alike data-id', () => {
+    const finding = makeFinding(
+      'duplicate-id',
+      '<div data-id="x" id="header">Header</div>',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('data-id="x"');
+    expect(patch.fixedCode).toContain(' id="header-unique"');
+  });
+
+  it('associates a label with the real id rather than a data-id', () => {
+    const finding = makeFinding(
+      'label',
+      '<input data-id="x" id="email" type="text">',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('<label for="email">');
+  });
+
+  it('adds an aria-label when only a data-id look-alike is present', () => {
+    const finding = makeFinding('label', '<input data-id="x" type="text">');
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('aria-label="Input label"');
+    expect(patch.fixedCode).not.toContain('<label');
+  });
+
+  it('leaves data-class and data-for untouched in React output', () => {
+    const finding = makeFinding(
+      'image-alt',
+      '<img class="a" data-class="b" data-for="c" src="pic.jpg">',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!, 'react');
+    expect(patch.fixedCode).toContain('className="a"');
+    expect(patch.fixedCode).toContain('data-class="b"');
+    expect(patch.fixedCode).toContain('data-for="c"');
+  });
+
   it('falls back to helpful comment for unknown rules', () => {
     const finding = makeFinding(
       'custom-rule',

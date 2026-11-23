@@ -22,8 +22,8 @@ function applyFrameworkFormatting(
   framework: RemediationFramework,
 ): string {
   if (framework === 'react') {
-    let formatted = code.replace(/\bclass="/g, 'className="');
-    formatted = formatted.replace(/\bfor="/g, 'htmlFor="');
+    let formatted = code.replace(/(?<=\s)class="/g, 'className="');
+    formatted = formatted.replace(/(?<=\s)for="/g, 'htmlFor="');
     // Ensure void tags close with self-closing slash if not already closed
     formatted = formatted.replace(
       /<(img|input|hr|br)([^>]*?)(?<!\/)>/gi,
@@ -212,7 +212,7 @@ function fixDocumentTitle(
 
 function fixLabel(html: string, framework: RemediationFramework): FixDraft {
   let fixedCode: string;
-  const idMatch = /id=["']([^"']+)["']/i.exec(html);
+  const idMatch = /\sid=["']([^"']+)["']/i.exec(html);
 
   if (idMatch) {
     const id = idMatch[1]!;
@@ -332,7 +332,10 @@ function fixDuplicateId(
   html: string,
   framework: RemediationFramework,
 ): FixDraft {
-  const fixedCode = html.replace(/\bid=["']([^"']+)["']/i, 'id="$1-unique"');
+  const fixedCode = html.replace(
+    /(?<=\s)id=["']([^"']+)["']/i,
+    'id="$1-unique"',
+  );
 
   return {
     fixedCode: applyFrameworkFormatting(fixedCode, framework),
