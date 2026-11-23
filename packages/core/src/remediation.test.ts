@@ -125,6 +125,24 @@ describe('remediation-heuristics', () => {
     expect(patch.fixedCode).not.toContain('alt=""');
   });
 
+  it('adds title to an iframe with a look-alike data-title attribute', () => {
+    const finding = makeFinding(
+      'frame-title',
+      '<iframe data-title="keep" src="a.html"></iframe>',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('data-title="keep"');
+    expect(patch.fixedCode).toContain(
+      '<iframe title="Embedded content description"',
+    );
+  });
+
+  it('adds lang without overwriting xml:lang on the html element', () => {
+    const finding = makeFinding('html-has-lang', '<html xml:lang="fr">');
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toBe('<html lang="en" xml:lang="fr">');
+  });
+
   it('formats React JSX for image-alt', () => {
     const finding = makeFinding(
       'image-alt',

@@ -164,8 +164,8 @@ function fixHtmlHasLang(
 ): FixDraft {
   let fixedCode: string;
   if (/<html\b/i.test(html)) {
-    if (/lang=/i.test(html)) {
-      fixedCode = html.replace(/lang=["'][^"']*["']/i, 'lang="en"');
+    if (/\slang=/i.test(html)) {
+      fixedCode = html.replace(/(?<=\s)lang=["'][^"']*["']/i, 'lang="en"');
     } else {
       fixedCode = html.replace(/<html\b/i, '<html lang="en"');
     }
@@ -246,9 +246,9 @@ function fixFrameTitle(
 ): FixDraft {
   let fixedCode: string;
   if (/<iframe\b/i.test(html)) {
-    if (/title=/i.test(html)) {
+    if (/\stitle=/i.test(html)) {
       fixedCode = html.replace(
-        /title=["'][^"']*["']/i,
+        /(?<=\s)title=["'][^"']*["']/i,
         'title="Embedded content description"',
       );
     } else {
