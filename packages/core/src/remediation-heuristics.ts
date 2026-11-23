@@ -54,8 +54,8 @@ function fixImageAlt(html: string, framework: RemediationFramework): FixDraft {
   }
 
   let fixedCode: string;
-  if (/alt=/i.test(html)) {
-    fixedCode = html.replace(/alt=["'][^"']*["']/i, `alt="${altValue}"`);
+  if (/\salt=/i.test(html)) {
+    fixedCode = html.replace(/(?<=\s)alt=["'][^"']*["']/i, `alt="${altValue}"`);
   } else if (/<img\b/i.test(html)) {
     fixedCode = html.replace(/<img\b/i, `<img alt="${altValue}"`);
   } else if (/<input\b[^>]*type=["']image["']/i.test(html)) {

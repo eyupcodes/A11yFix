@@ -104,6 +104,27 @@ describe('remediation-heuristics', () => {
     expect(inputPatch.fixedCode).toContain('alt="Submit"');
   });
 
+  it('adds alt instead of rewriting a look-alike data-alt attribute', () => {
+    const finding = makeFinding(
+      'image-alt',
+      '<img data-alt="keep" src="/assets/logo.png">',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('data-alt="keep"');
+    expect(patch.fixedCode).toContain('<img alt="Company logo"');
+  });
+
+  it('replaces an existing alt attribute even when data-alt precedes it', () => {
+    const finding = makeFinding(
+      'image-alt',
+      '<img data-alt="keep" alt="" src="/assets/logo.png">',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('data-alt="keep"');
+    expect(patch.fixedCode).toContain(' alt="Company logo"');
+    expect(patch.fixedCode).not.toContain('alt=""');
+  });
+
   it('formats React JSX for image-alt', () => {
     const finding = makeFinding(
       'image-alt',
