@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The `target-blank` heuristic fix merges `noopener noreferrer` into an existing `rel` without duplicating or reordering tokens and ignores `data-rel` / `data-target`; the `aria-hidden-focus` fallback emits `tabIndex={-1}` for React instead of an invalid `tabindex` attribute (#9).
+- Heuristic fixes no longer mistake look-alike attributes (`data-alt`, `data-title`, `xml:lang`, `data-id`, `data-class`, `data-for`) for `alt`, `title`, `lang`, `id`, `class` and `for` (#13).
 
 ### Added
 
