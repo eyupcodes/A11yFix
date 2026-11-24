@@ -22,8 +22,8 @@ function applyFrameworkFormatting(
   framework: RemediationFramework,
 ): string {
   if (framework === 'react') {
-    let formatted = code.replace(/\bclass="/g, 'className="');
-    formatted = formatted.replace(/\bfor="/g, 'htmlFor="');
+    let formatted = code.replace(/(?<=\s)class="/g, 'className="');
+    formatted = formatted.replace(/(?<=\s)for="/g, 'htmlFor="');
     // Ensure void tags close with self-closing slash if not already closed
     formatted = formatted.replace(
       /<(img|input|hr|br)([^>]*?)(?<!\/)>/gi,
@@ -54,8 +54,8 @@ function fixImageAlt(html: string, framework: RemediationFramework): FixDraft {
   }
 
   let fixedCode: string;
-  if (/alt=/i.test(html)) {
-    fixedCode = html.replace(/alt=["'][^"']*["']/i, `alt="${altValue}"`);
+  if (/\salt=/i.test(html)) {
+    fixedCode = html.replace(/(?<=\s)alt=["'][^"']*["']/i, `alt="${altValue}"`);
   } else if (/<img\b/i.test(html)) {
     fixedCode = html.replace(/<img\b/i, `<img alt="${altValue}"`);
   } else if (/<input\b[^>]*type=["']image["']/i.test(html)) {
@@ -164,8 +164,8 @@ function fixHtmlHasLang(
 ): FixDraft {
   let fixedCode: string;
   if (/<html\b/i.test(html)) {
-    if (/lang=/i.test(html)) {
-      fixedCode = html.replace(/lang=["'][^"']*["']/i, 'lang="en"');
+    if (/\slang=/i.test(html)) {
+      fixedCode = html.replace(/(?<=\s)lang=["'][^"']*["']/i, 'lang="en"');
     } else {
       fixedCode = html.replace(/<html\b/i, '<html lang="en"');
     }
@@ -212,7 +212,7 @@ function fixDocumentTitle(
 
 function fixLabel(html: string, framework: RemediationFramework): FixDraft {
   let fixedCode: string;
-  const idMatch = /id=["']([^"']+)["']/i.exec(html);
+  const idMatch = /\sid=["']([^"']+)["']/i.exec(html);
 
   if (idMatch) {
     const id = idMatch[1]!;
@@ -246,9 +246,9 @@ function fixFrameTitle(
 ): FixDraft {
   let fixedCode: string;
   if (/<iframe\b/i.test(html)) {
-    if (/title=/i.test(html)) {
+    if (/\stitle=/i.test(html)) {
       fixedCode = html.replace(
-        /title=["'][^"']*["']/i,
+        /(?<=\s)title=["'][^"']*["']/i,
         'title="Embedded content description"',
       );
     } else {
@@ -332,7 +332,10 @@ function fixDuplicateId(
   html: string,
   framework: RemediationFramework,
 ): FixDraft {
-  const fixedCode = html.replace(/\bid=["']([^"']+)["']/i, 'id="$1-unique"');
+  const fixedCode = html.replace(
+    /(?<=\s)id=["']([^"']+)["']/i,
+    'id="$1-unique"',
+  );
 
   return {
     fixedCode: applyFrameworkFormatting(fixedCode, framework),

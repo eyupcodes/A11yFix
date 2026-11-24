@@ -104,6 +104,45 @@ describe('remediation-heuristics', () => {
     expect(inputPatch.fixedCode).toContain('alt="Submit"');
   });
 
+  it('adds alt instead of rewriting a look-alike data-alt attribute', () => {
+    const finding = makeFinding(
+      'image-alt',
+      '<img data-alt="keep" src="/assets/logo.png">',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('data-alt="keep"');
+    expect(patch.fixedCode).toContain('<img alt="Company logo"');
+  });
+
+  it('replaces an existing alt attribute even when data-alt precedes it', () => {
+    const finding = makeFinding(
+      'image-alt',
+      '<img data-alt="keep" alt="" src="/assets/logo.png">',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('data-alt="keep"');
+    expect(patch.fixedCode).toContain(' alt="Company logo"');
+    expect(patch.fixedCode).not.toContain('alt=""');
+  });
+
+  it('adds title to an iframe with a look-alike data-title attribute', () => {
+    const finding = makeFinding(
+      'frame-title',
+      '<iframe data-title="keep" src="a.html"></iframe>',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('data-title="keep"');
+    expect(patch.fixedCode).toContain(
+      '<iframe title="Embedded content description"',
+    );
+  });
+
+  it('adds lang without overwriting xml:lang on the html element', () => {
+    const finding = makeFinding('html-has-lang', '<html xml:lang="fr">');
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toBe('<html lang="en" xml:lang="fr">');
+  });
+
   it('formats React JSX for image-alt', () => {
     const finding = makeFinding(
       'image-alt',
@@ -258,6 +297,43 @@ describe('remediation-heuristics', () => {
     );
     const patch = generateHeuristicFix(finding, finding.nodes[0]!);
     expect(patch.fixedCode).toContain('id="header-unique"');
+  });
+
+  it('suffixes the real id rather than a look-alike data-id', () => {
+    const finding = makeFinding(
+      'duplicate-id',
+      '<div data-id="x" id="header">Header</div>',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('data-id="x"');
+    expect(patch.fixedCode).toContain(' id="header-unique"');
+  });
+
+  it('associates a label with the real id rather than a data-id', () => {
+    const finding = makeFinding(
+      'label',
+      '<input data-id="x" id="email" type="text">',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('<label for="email">');
+  });
+
+  it('adds an aria-label when only a data-id look-alike is present', () => {
+    const finding = makeFinding('label', '<input data-id="x" type="text">');
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.fixedCode).toContain('aria-label="Input label"');
+    expect(patch.fixedCode).not.toContain('<label');
+  });
+
+  it('leaves data-class and data-for untouched in React output', () => {
+    const finding = makeFinding(
+      'image-alt',
+      '<img class="a" data-class="b" data-for="c" src="pic.jpg">',
+    );
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!, 'react');
+    expect(patch.fixedCode).toContain('className="a"');
+    expect(patch.fixedCode).toContain('data-class="b"');
+    expect(patch.fixedCode).toContain('data-for="c"');
   });
 
   it('falls back to helpful comment for unknown rules', () => {
