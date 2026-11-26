@@ -210,6 +210,9 @@ function fixDocumentTitle(
   };
 }
 
+/** A form control that a label or aria-label can be attached to. */
+const FORM_CONTROL = /<(?:input|select|textarea)\b/i;
+
 function fixLabel(html: string, framework: RemediationFramework): FixDraft {
   let fixedCode: string;
   const idMatch = /\sid=["']([^"']+)["']/i.exec(html);
@@ -224,8 +227,12 @@ function fixLabel(html: string, framework: RemediationFramework): FixDraft {
       'aria-label="Input label"',
     );
   } else {
-    fixedCode = html.replace(/<input\b/i, '<input aria-label="Input label"');
+    fixedCode = html.replace(
+      /<(input|select|textarea)\b/i,
+      '<$1 aria-label="Input label"',
+    );
   }
+  const tag = /<(input|select|textarea)\b/i.exec(html)?.[1]?.toLowerCase();
 
   return {
     fixedCode: applyFrameworkFormatting(fixedCode, framework),
@@ -234,7 +241,7 @@ function fixLabel(html: string, framework: RemediationFramework): FixDraft {
     changes: [
       idMatch
         ? `Added <label> explicitly associated with id="${idMatch[1]}"`
-        : 'Added aria-label="Input label" to input element',
+        : `Added aria-label="Input label" to ${tag ?? 'input'} element`,
     ],
     confidence: 'high',
   };
@@ -404,7 +411,10 @@ export function generateHeuristicFix(
       draft = fixDocumentTitle(originalHtml, framework);
       break;
     case 'label':
-      draft = fixLabel(originalHtml, framework);
+    case 'select-name':
+      draft = FORM_CONTROL.test(originalHtml)
+        ? fixLabel(originalHtml, framework)
+        : fixGenericFallback(finding, node, framework);
       break;
     case 'frame-title':
       draft = fixFrameTitle(originalHtml, framework);
