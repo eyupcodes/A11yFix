@@ -219,6 +219,33 @@ describe('remediation-heuristics', () => {
     expect(patchNoId.fixedCode).toContain('aria-label="Input label"');
   });
 
+  it('adds an aria-label to select and textarea controls without an id', () => {
+    for (const [ruleId, html, tag] of [
+      ['label', '<textarea name="note"></textarea>', 'textarea'],
+      [
+        'label',
+        '<select name="country"><option>TR</option></select>',
+        'select',
+      ],
+      ['select-name', '<select name="size"></select>', 'select'],
+    ] as const) {
+      const finding = makeFinding(ruleId, html);
+      const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+      expect(patch.fixedCode).toContain(`<${tag} aria-label="Input label"`);
+      expect(patch.fixedCode).not.toBe(html);
+      expect(patch.changes[0]).toContain(`to ${tag} element`);
+      expect(patch.confidence).toBe('high');
+    }
+  });
+
+  it('does not claim a label fix when the snippet has no form control', () => {
+    const finding = makeFinding('label', '<div role="textbox"></div>');
+    const patch = generateHeuristicFix(finding, finding.nodes[0]!);
+    expect(patch.confidence).toBe('low');
+    expect(patch.fixedCode).toContain('a11yfix [label]');
+    expect(patch.fixedCode).toContain('<div role="textbox"></div>');
+  });
+
   it('fixes frame-title by adding title attribute', () => {
     const finding = makeFinding(
       'frame-title',
