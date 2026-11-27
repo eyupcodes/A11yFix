@@ -6,10 +6,11 @@ import {
   renderSarifReport,
   ReporterError,
 } from '@a11yfix/reporter';
-import { scanAccessibility, ScannerError } from '@a11yfix/scanner';
+import { crawlSite, scanAccessibility, ScannerError } from '@a11yfix/scanner';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  handleCrawl,
   handleDiff,
   handleExport,
   handleHealth,
@@ -19,6 +20,7 @@ import {
 
 vi.mock('@a11yfix/scanner', () => ({
   scanAccessibility: vi.fn(),
+  crawlSite: vi.fn(),
   ScannerError: class ScannerError extends Error {
     readonly code: string;
     constructor(code: string, message: string) {
@@ -140,6 +142,67 @@ describe('API Handlers', () => {
       const res = await handleScan({ url: 'https://example.com' });
       expect(res.status).toBe(500);
       expect((res.body as { code: string }).code).toBe('INTERNAL_ERROR');
+    });
+  });
+
+  describe('request limit validation', () => {
+    const badTimeouts = ['10', null, true, 0, -1, Number.NaN, Infinity];
+
+    it.each(badTimeouts)(
+      'rejects scan timeout %s with 400 before scanning',
+      async (timeout) => {
+        vi.mocked(scanAccessibility).mockClear();
+
+        const res = await handleScan({ url: 'https://example.com', timeout });
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({
+          error: 'Invalid "timeout": must be a positive number.',
+          code: 'INVALID_REQUEST',
+        });
+        expect(scanAccessibility).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      ['timeout', '10'],
+      ['timeout', 0],
+      ['timeout', Infinity],
+      ['maxPages', 0],
+      ['maxPages', Infinity],
+      ['maxPages', '3'],
+      ['maxDepth', -1],
+      ['maxDepth', Infinity],
+      ['maxDepth', Number.NaN],
+    ])('rejects crawl %s=%s with 400 before crawling', async (field, value) => {
+      vi.mocked(crawlSite).mockClear();
+
+      const res = await handleCrawl({
+        url: 'https://example.com',
+        [field]: value,
+      });
+
+      expect(res.status).toBe(400);
+      expect((res.body as { code: string }).code).toBe('INVALID_REQUEST');
+      expect((res.body as { error: string }).error).toContain(`"${field}"`);
+      expect(crawlSite).not.toHaveBeenCalled();
+    });
+
+    it('passes valid crawl limits to the crawler', async () => {
+      vi.mocked(crawlSite).mockRejectedValue(new Error('stop here'));
+
+      await handleCrawl({
+        url: 'https://example.com',
+        maxPages: 3,
+        maxDepth: 0,
+        timeout: 5000,
+      });
+
+      expect(crawlSite).toHaveBeenCalledWith('https://example.com', {
+        maxPages: 3,
+        maxDepth: 0,
+        navigationTimeoutMs: 5000,
+      });
     });
   });
 
