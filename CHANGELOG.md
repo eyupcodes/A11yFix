@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `POST /api/scan` validates `timeout` like `/api/crawl` and answers `400 INVALID_REQUEST` for a non-number, zero or negative value instead of passing it to Playwright (where `0` disables the timeout); the crawl endpoint now also rejects `Infinity` for `timeout`, `maxPages` and `maxDepth` (#17).
 - The `label` heuristic fix adds its `aria-label` to `<select>` and `<textarea>` controls as well as `<input>`, `select-name` findings use it, and a snippet without a form control gets low-confidence guidance instead of an unchanged patch described as a fix (#15).
 - The `target-blank` heuristic fix merges `noopener noreferrer` into an existing `rel` without duplicating or reordering tokens and ignores `data-rel` / `data-target`; the `aria-hidden-focus` fallback emits `tabIndex={-1}` for React instead of an invalid `tabindex` attribute (#9).
 - Heuristic fixes no longer mistake look-alike attributes (`data-alt`, `data-title`, `xml:lang`, `data-id`, `data-class`, `data-for`) for `alt`, `title`, `lang`, `id`, `class` and `for` (#13).
