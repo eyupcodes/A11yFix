@@ -26,6 +26,10 @@ import type {
   ScanApiRequest,
 } from './types.js';
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
 export function handleHealth(): {
   readonly status: number;
   readonly body: HealthApiResponse;
@@ -58,6 +62,16 @@ export async function handleScan(
   }
 
   const { url, timeout } = payload as ScanApiRequest;
+
+  if (timeout !== undefined && (!isFiniteNumber(timeout) || timeout <= 0)) {
+    return {
+      status: 400,
+      body: {
+        error: 'Invalid "timeout": must be a positive number.',
+        code: 'INVALID_REQUEST',
+      } satisfies ApiErrorResponse,
+    };
+  }
 
   try {
     const scanOptions =
@@ -110,10 +124,7 @@ export async function handleCrawl(
 
   const { url, maxPages, maxDepth, timeout } = payload as CrawlApiRequest;
 
-  if (
-    maxPages !== undefined &&
-    (typeof maxPages !== 'number' || Number.isNaN(maxPages) || maxPages < 1)
-  ) {
+  if (maxPages !== undefined && (!isFiniteNumber(maxPages) || maxPages < 1)) {
     return {
       status: 400,
       body: {
@@ -123,10 +134,7 @@ export async function handleCrawl(
     };
   }
 
-  if (
-    maxDepth !== undefined &&
-    (typeof maxDepth !== 'number' || Number.isNaN(maxDepth) || maxDepth < 0)
-  ) {
+  if (maxDepth !== undefined && (!isFiniteNumber(maxDepth) || maxDepth < 0)) {
     return {
       status: 400,
       body: {
@@ -136,10 +144,7 @@ export async function handleCrawl(
     };
   }
 
-  if (
-    timeout !== undefined &&
-    (typeof timeout !== 'number' || Number.isNaN(timeout) || timeout <= 0)
-  ) {
+  if (timeout !== undefined && (!isFiniteNumber(timeout) || timeout <= 0)) {
     return {
       status: 400,
       body: {
